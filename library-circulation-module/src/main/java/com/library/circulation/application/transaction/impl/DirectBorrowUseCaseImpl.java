@@ -13,6 +13,7 @@ import com.library.shared.kafka.KafkaTopics;
 import com.library.shared.kafka.event.NotificationMessage;
 import com.library.shared.port.ItemSnapshot;
 import com.library.shared.port.ItemStatusPort;
+import com.library.shared.port.UserInteractionPort;
 import com.library.shared.util.TsIdGenerator;
 import com.library.user.domain.valueobject.UserId;
 import java.time.LocalDate;
@@ -57,6 +58,7 @@ public class DirectBorrowUseCaseImpl implements DirectBorrowUseCase {
     private final BorrowingTransactionJpaRepository transactionJpaRepository;
     private final NamedParameterJdbcTemplate jdbcTemplate;
     private final KafkaTemplate<String, Object> kafkaTemplate;
+    private final UserInteractionPort userInteractionPort;
 
     @Override
     @Transactional
@@ -135,6 +137,7 @@ public class DirectBorrowUseCaseImpl implements DirectBorrowUseCase {
             entity.getId()
         ));
 
+        userInteractionPort.record(userId, item.publicationId(), UserInteractionPort.TYPE_BORROW);
         log.info("Direct borrow created: transactionId={}, userId={}, itemId={}, librarianId={}",
             entity.getId(), userId, item.id(), librarianId);
 

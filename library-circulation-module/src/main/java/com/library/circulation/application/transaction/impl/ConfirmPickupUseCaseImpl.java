@@ -14,6 +14,7 @@ import com.library.shared.exception.AppException;
 import com.library.shared.exception.ErrorCode;
 import com.library.shared.kafka.KafkaTopics;
 import com.library.shared.kafka.event.NotificationMessage;
+import com.library.shared.port.UserInteractionPort;
 import com.library.user.domain.valueobject.UserId;
 import java.time.LocalDate;
 import java.time.ZoneId;
@@ -37,6 +38,7 @@ public class ConfirmPickupUseCaseImpl implements ConfirmPickupUseCase {
     private final BorrowingTransactionJpaRepository transactionJpaRepository;
     private final ItemStatusPort itemStatusPort;
     private final KafkaTemplate<String, Object> kafkaTemplate;
+    private final UserInteractionPort userInteractionPort;
 
     @Override
     @Transactional
@@ -72,6 +74,7 @@ public class ConfirmPickupUseCaseImpl implements ConfirmPickupUseCase {
             entity.getId()
         ));
 
+        userInteractionPort.record(entity.getUserId(), item.publicationId(), UserInteractionPort.TYPE_BORROW);
         log.info("Pickup confirmed: transactionId={}, librarianId={}", transactionId, librarianId);
 
         return BorrowTransactionResponse.builder()

@@ -3,6 +3,7 @@ package com.library.catalog.presentation.controller;
 import com.library.catalog.application.CreatePublicationUseCase;
 import com.library.catalog.application.GetDocumentUploadUrlUseCase;
 import com.library.catalog.application.GetListPublicationForLibrarianUseCase;
+import com.library.catalog.application.RecordPublicationViewUseCase;
 import com.library.catalog.application.SearchPublicationsUseCase;
 import com.library.catalog.application.GetMostBorrowedPublicationsUseCase;
 import com.library.catalog.application.GetNewestPublicationsUseCase;
@@ -26,7 +27,9 @@ import com.library.catalog.dto.response.publication.PublicationDetailResponse;
 import com.library.shared.constant.RoleConstants;
 import com.library.shared.dto.ApiResponseApp;
 import com.library.shared.dto.PageResponse;
+import com.library.shared.util.RequiresAuthentication;
 import com.library.shared.util.RequiresRole;
+import com.library.shared.util.SecurityEvaluator;
 import jakarta.validation.Valid;
 import java.util.List;
 import lombok.RequiredArgsConstructor;
@@ -53,6 +56,8 @@ public class PublicationController {
 
   private final GetListPublicationForLibrarianUseCase getListPublicationForLibrarianUseCase;
   private final GetPublicationByIdByUseCase getPublicationByIdByUseCase;
+  private final RecordPublicationViewUseCase recordPublicationViewUseCase;
+  private final SecurityEvaluator securityEvaluator;
   private final UpdatePublicationUseCase updatePublicationUseCase;
   private final CreatePublicationUseCase createPublicationUseCase;
   private final GetNewestPublicationsUseCase getNewestPublicationsUseCase;
@@ -121,6 +126,13 @@ public class PublicationController {
   public ApiResponseApp<PublicationDetailResponse> getPublicationById(
       @PathVariable("id") Long id) {
     return ApiResponseApp.success(getPublicationByIdByUseCase.execute(id));
+  }
+
+  @PostMapping("/{id}/view")
+  @RequiresAuthentication
+  public ApiResponseApp<Void> recordView(@PathVariable("id") Long id) {
+    recordPublicationViewUseCase.execute(id, securityEvaluator.getCurrentUserId());
+    return ApiResponseApp.success("ok");
   }
 
   // public endpoint
