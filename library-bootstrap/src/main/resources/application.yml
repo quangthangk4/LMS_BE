@@ -32,10 +32,9 @@ spring:
     name: library-management-system
 
   datasource:
-    url: jdbc:postgresql://localhost:5432/library
-    username: library
-    password: library
-
+    url: ${DATABASE_URL:jdbc:postgresql://localhost:5432/library}
+    username: ${DATABASE_USERNAME:library}
+    password: ${DATABASE_PASSWORD:library}
 
   jpa:
     hibernate:
@@ -62,8 +61,8 @@ spring:
   mail:
     host: smtp.gmail.com
     port: 587
-    username: ${MAIL_SENDER_USERNAME}
-    password: ${MAIL_SENDER_PASSWORD}
+    username: ${MAIL_SENDER_USERNAME:}
+    password: ${MAIL_SENDER_PASSWORD:}
     properties:
       mail.smtp.auth: true
       mail.smtp.starttls.enable: true
@@ -76,7 +75,7 @@ spring:
     clean-disabled: true  # Prevent accidental data loss
     schemas: public
     default-schema: public
-  
+
   security:
     oauth2:
       client:

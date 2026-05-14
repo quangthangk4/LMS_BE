@@ -89,11 +89,12 @@
       <artifactId>lombok</artifactId>
     </dependency>
 
-    <!-- Dotenv -->
+    <!-- Source: https://mvnrepository.com/artifact/me.paulschwarz/spring-dotenv -->
     <dependency>
       <groupId>me.paulschwarz</groupId>
       <artifactId>spring-dotenv</artifactId>
       <version>4.0.0</version>
+      <scope>compile</scope>
     </dependency>
 
     <!-- Testing -->
@@ -136,6 +137,9 @@
       <plugin>
         <groupId>org.springframework.boot</groupId>
         <artifactId>spring-boot-maven-plugin</artifactId>
+        <configuration>
+          <workingDirectory>${project.parent.basedir}</workingDirectory>
+        </configuration>
         <executions>
           <execution>
             <goals>
