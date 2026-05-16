@@ -16,15 +16,14 @@ public class CreateCategoryUseCaseImpl implements CreateCategoryUseCase {
 
     @Override
     @Transactional
-    public void execute(String name) {
+    public Long execute(String name) {
         if (name == null || name.isBlank()) {
             throw new IllegalArgumentException("Category name cannot be empty");
         }
-
         CategoryEntity entity = new CategoryEntity();
         entity.setId(TsIdGenerator.next());
         entity.setName(name.replace("\"", ""));
-
         categoryJpaRepository.save(entity);
+        return entity.getId();
     }
 }

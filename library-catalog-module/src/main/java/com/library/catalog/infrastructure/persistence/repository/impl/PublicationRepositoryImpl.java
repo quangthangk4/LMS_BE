@@ -133,6 +133,7 @@ public class PublicationRepositoryImpl implements PublicationRepositoryCustom {
             p.id, p.isbn, p.title, p.subtitle, p.description, p.language,
             p.number_of_pages, p.ai_summary, p.ai_target_audience, p.file_url,
             p.publication_year, p.edition, p.cover_image_url, p.size, p.weight,
+            p.call_number, p.table_of_contents,
             pb.id   AS publisher_id,
             pb.name AS publisher_name
         FROM publications p
@@ -163,6 +164,8 @@ public class PublicationRepositoryImpl implements PublicationRepositoryCustom {
         .coverImageUrl((String) pub.get("cover_image_url"))
         .size((String) pub.get("size"))
         .weight(toDouble(pub.get("weight")))
+        .callNumber((String) pub.get("call_number"))
+        .tableOfContents((String) pub.get("table_of_contents"))
         .build();
 
     PublisherOverviewResponse publisher = null;

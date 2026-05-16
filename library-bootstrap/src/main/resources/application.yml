@@ -108,6 +108,10 @@ base:
   url: ${BASE_URL_WEBSITE:http://localhost:8080}
   frontend-url: ${FRONTEND_URL:http://localhost:3000}
 
+google:
+  books:
+    api-key: ${GOOGLE_BOOKS_API_KEY:}
+
 #logging:
 #  level:
 #    root: INFO

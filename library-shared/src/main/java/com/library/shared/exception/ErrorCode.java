@@ -59,7 +59,9 @@ public enum ErrorCode {
 
   PUBLICATION_ALREADY_EXISTS(2001, "Publication already exists", HttpStatus.CONFLICT),
   ISBN_ALREADY_EXISTS(2002, "ISBN already exists", HttpStatus.CONFLICT),
-  CANNOT_DELETE_PUBLICATION_HAS_ITEMS(2003, "Cannot delete publication has items",
+  CANNOT_DELETE_PUBLICATION_HAS_ITEMS(2003, "Cannot delete publication: items still exist",
+      HttpStatus.CONFLICT),
+  CANNOT_DELETE_PUBLICATION_HAS_ACTIVE_RESERVATIONS(2004, "Cannot delete publication: active reservations exist",
       HttpStatus.CONFLICT),
 
   // Catalog - Item errors (2100-2199)

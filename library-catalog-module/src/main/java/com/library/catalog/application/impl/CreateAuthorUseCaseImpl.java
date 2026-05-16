@@ -16,15 +16,14 @@ public class CreateAuthorUseCaseImpl implements CreateAuthorUseCase {
 
     @Override
     @Transactional
-    public void execute(String name) {
+    public Long execute(String name) {
         if (name == null || name.isBlank()) {
             throw new IllegalArgumentException("Author name cannot be empty");
         }
-        
         AuthorEntity entity = new AuthorEntity();
         entity.setId(TsIdGenerator.next());
-        entity.setName(name.replace("\"", "")); // remove quotes if sent from JSON string or similar
-        
+        entity.setName(name.replace("\"", ""));
         authorJpaRepository.save(entity);
+        return entity.getId();
     }
 }

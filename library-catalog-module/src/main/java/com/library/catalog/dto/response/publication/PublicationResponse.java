@@ -26,4 +26,5 @@ public class PublicationResponse {
     private String size; // e.g., "20x15x3 cm"
     private Double weight; // in grams
     private String callNumber;
+    private String tableOfContents;
 }

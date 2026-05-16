@@ -16,6 +16,7 @@ import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
 import java.util.List;
+import java.util.Map;
 
 @Slf4j
 @RestController
@@ -36,9 +37,9 @@ public class AuthorController {
 
     @PostMapping
     @RequiresRole(RoleConstants.LIBRARIAN)
-    public ApiResponseApp<Void> createAuthor(@RequestBody String name) {
+    public ApiResponseApp<Map<String, Object>> createAuthor(@RequestBody String name) {
         log.info("Create author: {}", name);
-        createAuthorUseCase.execute(name);
-        return ApiResponseApp.success("create author success");
+        Long id = createAuthorUseCase.execute(name);
+        return ApiResponseApp.created(Map.of("id", String.valueOf(id), "name", name.replace("\"", "")));
     }
 }
