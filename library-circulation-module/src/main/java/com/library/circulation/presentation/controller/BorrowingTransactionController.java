@@ -69,10 +69,15 @@ public class BorrowingTransactionController {
       @RequestParam(value = "page", defaultValue = "0") int page,
       @RequestParam(value = "size", defaultValue = "15") int size,
       @RequestParam(value = "keyword", required = false) String keyword,
+      @RequestParam(value = "status", required = false) String status,
+      @RequestParam(value = "fineStatus", required = false) String fineStatus,
+      @RequestParam(value = "dateFrom", required = false) String dateFrom,
+      @RequestParam(value = "dateTo", required = false) String dateTo,
       @RequestParam(value = "sortBy", defaultValue = "createdAt") String sortBy,
       @RequestParam(value = "sortDir", defaultValue = "DESC") String sortDir) {
     return ApiResponseApp.success("All transactions",
-        getAllBorrowingTransactionUseCase.execute(page, size, keyword, sortBy, sortDir));
+        getAllBorrowingTransactionUseCase.execute(
+            page, size, keyword, status, fineStatus, dateFrom, dateTo, sortBy, sortDir));
   }
 
   @RequiresRole(RoleConstants.LIBRARIAN)

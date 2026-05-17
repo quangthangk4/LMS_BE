@@ -61,10 +61,6 @@ public class UserEntity extends BaseEntity {
 
     private String providerId;
 
-    @Column( nullable = false)
-    @Builder.Default
-    private Boolean aiPersonalizationEnabled = true;
-
     @Column(nullable = false)
     @Builder.Default
     private int creditScore = 100;

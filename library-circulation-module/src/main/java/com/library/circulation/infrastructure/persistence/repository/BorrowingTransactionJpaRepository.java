@@ -74,7 +74,7 @@ public interface BorrowingTransactionJpaRepository extends
 
   @Query(value = """
           SELECT new com.library.circulation.dto.response.UserTransactionResponse(
-              t.id, p.id, p.title, i.barcode, i.branch, i.location,
+              t.id, p.id, p.title, p.coverImageUrl, i.barcode, i.branch, i.location,
               t.pickedUpDeadline, t.borrowedDate, t.dueDate, t.returnedDate, t.status, f.fineAmount
           )
           FROM BorrowingTransactionEntity t

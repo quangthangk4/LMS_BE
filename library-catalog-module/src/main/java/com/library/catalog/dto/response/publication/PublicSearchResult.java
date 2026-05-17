@@ -15,5 +15,6 @@ public record PublicSearchResult(
     int totalItems,
     int availableItems,
     double avgRating,
-    long borrowCount
+    long borrowCount,
+    long viewCount
 ) {}

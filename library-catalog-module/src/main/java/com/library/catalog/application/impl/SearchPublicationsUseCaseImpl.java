@@ -37,7 +37,9 @@ public class SearchPublicationsUseCaseImpl implements SearchPublicationsUseCase 
              WHERE r.publication_id = p.id)                                               AS avg_rating,
             (SELECT COUNT(*) FROM borrowing_transactions bt
              JOIN items bi ON bi.id = bt.item_id
-             WHERE bi.publication_id = p.id)                                              AS borrow_count
+             WHERE bi.publication_id = p.id)                                              AS borrow_count,
+            (SELECT COUNT(*) FROM user_interactions ui
+             WHERE ui.publication_id = p.id AND ui.type = 'WATCH')                        AS view_count
         FROM publications p
         LEFT JOIN publishers pub ON pub.id = p.publisher_id
         """;
@@ -71,7 +73,8 @@ public class SearchPublicationsUseCaseImpl implements SearchPublicationsUseCase 
                 rs.getInt("total_items"),
                 rs.getInt("available_items"),
                 rs.getDouble("avg_rating"),
-                rs.getLong("borrow_count")
+                rs.getLong("borrow_count"),
+                rs.getLong("view_count")
             )
         );
 
@@ -159,6 +162,7 @@ public class SearchPublicationsUseCaseImpl implements SearchPublicationsUseCase 
         String primarySort = switch (sortBy != null ? sortBy : "newest") {
             case "title_az"      -> "p.title ASC";
             case "most_borrowed" -> "(SELECT COUNT(*) FROM borrowing_transactions bt JOIN items bi ON bi.id = bt.item_id WHERE bi.publication_id = p.id) DESC";
+            case "most_viewed"   -> "(SELECT COUNT(*) FROM user_interactions ui WHERE ui.publication_id = p.id AND ui.type = 'WATCH') DESC";
             case "rating"        -> "(SELECT COALESCE(AVG(r.star::numeric), 0) FROM ratings r WHERE r.publication_id = p.id) DESC";
             default              -> "p.publication_year DESC NULLS LAST, p.id DESC";
         };

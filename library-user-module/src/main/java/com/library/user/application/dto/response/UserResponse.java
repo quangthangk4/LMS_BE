@@ -19,7 +19,6 @@ public record UserResponse(
     String profilePictureUrl,
     Set<RoleResponse> roles,
     String status,
-    boolean aiPersonalizationEnabled,
     LocalDateTime lastLoginAt,
     Long creditScore
 ) {

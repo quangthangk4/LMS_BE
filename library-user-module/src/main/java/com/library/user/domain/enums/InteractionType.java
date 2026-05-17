@@ -6,8 +6,8 @@ import lombok.Getter;
 public enum InteractionType {
 
     WATCH(1),
-    WISHLIST(3),
-    BORROWED(5);
+    WISHLIST(5),
+    BORROWED(10);
 
     private final int point;
 

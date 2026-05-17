@@ -17,6 +17,7 @@ public class UserTransactionResponse {
     @JsonSerialize(using = ToStringSerializer.class)
     private Long publicationId;
     private String publicationTitle;
+    private String coverImageUrl;
     private String barcode;
     private String branch;
     private String location;

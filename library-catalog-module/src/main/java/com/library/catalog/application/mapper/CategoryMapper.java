@@ -9,5 +9,9 @@ import org.mapstruct.Mapping;
 public interface CategoryMapper {
 
     @Mapping(target = "id", source = "id.value")
+    @Mapping(target = "bio", ignore = true)
+    @Mapping(target = "parentCategoryId", ignore = true)
+    @Mapping(target = "parentCategoryName", ignore = true)
+    @Mapping(target = "publicationCount", ignore = true)
     CategoryOverviewResponse toCategoryOverviewResponse(Category category);
 }

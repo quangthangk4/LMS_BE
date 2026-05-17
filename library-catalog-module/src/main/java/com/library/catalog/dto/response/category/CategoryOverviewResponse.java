@@ -11,4 +11,9 @@ public class CategoryOverviewResponse {
     @JsonSerialize(using = ToStringSerializer.class)
     private Long id;
     private String name;
+    private String bio;
+    @JsonSerialize(using = ToStringSerializer.class)
+    private Long parentCategoryId;
+    private String parentCategoryName;
+    private long publicationCount;
 }

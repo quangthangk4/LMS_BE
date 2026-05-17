@@ -24,4 +24,7 @@ public class LibrarianPublicationListResponse {
   private String publisherName;
   private String categoryNames;
   private Instant createdAt;
+  private String aiProcessingStatus;
+  private String aiProcessingError;
+  private Instant aiProcessedAt;
 }

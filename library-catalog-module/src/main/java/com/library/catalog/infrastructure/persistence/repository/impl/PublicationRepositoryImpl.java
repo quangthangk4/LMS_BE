@@ -66,6 +66,7 @@ public class PublicationRepositoryImpl implements PublicationRepositoryCustom {
         LEFT JOIN categories c              ON c.id = pc.category_id
         LEFT JOIN publishers pub            ON pub.id = p.publisher_id
         LEFT JOIN items i                   ON i.publication_id  = p.id
+        LEFT JOIN ai_engine.publication_etl_runs etl ON etl.publication_id = p.id
         """;
 
     String dataSQL = "SELECT p.id, p.title, p.subtitle, p.cover_image_url, "
@@ -75,9 +76,12 @@ public class PublicationRepositoryImpl implements PublicationRepositoryCustom {
         + "p.isbn, "
         + "pub.name AS publisher_name, "
         + "STRING_AGG(DISTINCT c.name, ',') AS category_names, "
-        + "COUNT(DISTINCT i.id) FILTER (WHERE i.status = 'AVAILABLE') AS available_items "
+        + "COUNT(DISTINCT i.id) FILTER (WHERE i.status = 'AVAILABLE') AS available_items, "
+        + "COALESCE(etl.status, CASE WHEN p.file_url IS NULL THEN 'NOT_UPLOADED' ELSE 'NOT_STARTED' END) AS ai_processing_status, "
+        + "etl.error_message AS ai_processing_error, "
+        + "etl.updated_at AS ai_processed_at "
         + joins + where
-        + "GROUP BY p.id, p.title, p.subtitle, p.cover_image_url, p.publication_year, p.created_at, p.isbn, pub.name";
+        + "GROUP BY p.id, p.title, p.subtitle, p.cover_image_url, p.publication_year, p.created_at, p.isbn, pub.name, etl.status, etl.error_message, etl.updated_at";
 
     String countSQL = "SELECT COUNT(*) FROM (SELECT p.id " + joins + where + "GROUP BY p.id) sub";
 
@@ -133,10 +137,21 @@ public class PublicationRepositoryImpl implements PublicationRepositoryCustom {
             p.id, p.isbn, p.title, p.subtitle, p.description, p.language,
             p.number_of_pages, p.ai_summary, p.ai_target_audience, p.file_url,
             p.publication_year, p.edition, p.cover_image_url, p.size, p.weight,
+            (SELECT COUNT(*) FROM borrowing_transactions bt
+             JOIN items bi ON bi.id = bt.item_id
+             WHERE bi.publication_id = p.id) AS borrow_count,
+            (SELECT COUNT(*) FROM user_interactions ui
+             WHERE ui.publication_id = p.id AND ui.type = 'WATCH') AS view_count,
+            COALESCE(etl.status, CASE WHEN p.file_url IS NULL THEN 'NOT_UPLOADED' ELSE 'NOT_STARTED' END) AS ai_processing_status,
+            etl.error_message AS ai_processing_error,
+            etl.chunks_count AS ai_chunks_count,
+            etl.vectors_count AS ai_vectors_count,
+            etl.updated_at AS ai_processed_at,
             pb.id   AS publisher_id,
             pb.name AS publisher_name
         FROM publications p
         LEFT JOIN publishers pb ON pb.id = p.publisher_id
+        LEFT JOIN ai_engine.publication_etl_runs etl ON etl.publication_id = p.id
         WHERE p.id = ?
         """;
 
@@ -163,6 +178,13 @@ public class PublicationRepositoryImpl implements PublicationRepositoryCustom {
         .coverImageUrl((String) pub.get("cover_image_url"))
         .size((String) pub.get("size"))
         .weight(toDouble(pub.get("weight")))
+        .borrowCount(toLong(pub.get("borrow_count")))
+        .viewCount(toLong(pub.get("view_count")))
+        .aiProcessingStatus((String) pub.get("ai_processing_status"))
+        .aiProcessingError((String) pub.get("ai_processing_error"))
+        .aiChunksCount(toInt(pub.get("ai_chunks_count")))
+        .aiVectorsCount(toInt(pub.get("ai_vectors_count")))
+        .aiProcessedAt(toInstant(pub.get("ai_processed_at")))
         .build();
 
     PublisherOverviewResponse publisher = null;
@@ -290,6 +312,9 @@ public class PublicationRepositoryImpl implements PublicationRepositoryCustom {
         .publisherName((String) row[9])
         .categoryNames((String) row[10])
         .availableItems(toLong(row[11]))
+        .aiProcessingStatus((String) row[12])
+        .aiProcessingError((String) row[13])
+        .aiProcessedAt(toInstant(row[14]))
         .build();
   }
 
@@ -303,6 +328,19 @@ public class PublicationRepositoryImpl implements PublicationRepositoryCustom {
 
   private Double toDouble(Object val) {
     return val instanceof Number n ? n.doubleValue() : null;
+  }
+
+  private Instant toInstant(Object val) {
+    if (val instanceof java.time.OffsetDateTime odt) {
+      return odt.toInstant();
+    }
+    if (val instanceof java.sql.Timestamp ts) {
+      return ts.toInstant();
+    }
+    if (val instanceof Instant instant) {
+      return instant;
+    }
+    return null;
   }
 
   private <E extends Enum<E>> E toEnum(Object val, Class<E> type) {

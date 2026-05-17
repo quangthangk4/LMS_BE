@@ -10,7 +10,7 @@ import org.springframework.scheduling.annotation.EnableScheduling;
 
 @EnableJpaAuditing
 @EnableScheduling
-@EnableAsync
+@EnableAsync(proxyTargetClass = true)
 @SpringBootApplication(scanBasePackages = "com.library")
 @ConfigurationPropertiesScan
 public class LibraryManagementApplication {

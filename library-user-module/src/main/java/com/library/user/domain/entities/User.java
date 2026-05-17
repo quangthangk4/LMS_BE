@@ -32,7 +32,6 @@ public class User {
   private UserProfile profile;
   private final Set<Role> roles;
   private UserStatus status;
-  private boolean aiPersonalizationEnabled;
   private LocalDateTime lastLoginAt;
   private final String provider;
   private final String providerId;
@@ -50,7 +49,6 @@ public class User {
       UserProfile profile,
       Set<Role> roles,
       UserStatus status,
-      boolean aiPersonalizationEnabled,
       LocalDateTime lastLoginAt,
       String provider,
       String providerId,
@@ -62,7 +60,6 @@ public class User {
         .profile(profile)
         .roles(roles)
         .status(status)
-        .aiPersonalizationEnabled(aiPersonalizationEnabled)
         .lastLoginAt(lastLoginAt)
         .provider(provider)
         .providerId(providerId)
@@ -88,7 +85,6 @@ public class User {
         .roles(roles)
         .status(UserStatus.ACTIVE)
         .profile(profile)
-        .aiPersonalizationEnabled(true)
         .creditScore(DEFAULT_SCORE)
         .build();
   }
@@ -106,7 +102,6 @@ public class User {
         .roles(roles)
         .status(UserStatus.INACTIVE)
         .profile(profile)
-        .aiPersonalizationEnabled(true)
         .creditScore(DEFAULT_SCORE)
         .build();
 
@@ -134,7 +129,6 @@ public class User {
         .profile(profile)
         .roles(roles)
         .status(UserStatus.ACTIVE)
-        .aiPersonalizationEnabled(true)
         .provider(provider)
         .providerId(providerId)
         .creditScore(DEFAULT_SCORE)
@@ -235,10 +229,6 @@ public class User {
       throw new DomainException("Profile cannot be null");
     }
     this.profile = profile;
-  }
-
-  public void toggleAIPersonalization(boolean aiPersonalizationEnabled) {
-    this.aiPersonalizationEnabled = aiPersonalizationEnabled;
   }
 
   // ============== Domain Events ==============

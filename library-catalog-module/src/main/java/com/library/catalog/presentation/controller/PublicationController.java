@@ -8,6 +8,8 @@ import com.library.catalog.application.SearchPublicationsUseCase;
 import com.library.catalog.application.GetMostBorrowedPublicationsUseCase;
 import com.library.catalog.application.GetNewestPublicationsUseCase;
 import com.library.catalog.application.GetPublicationByIdByUseCase;
+import com.library.catalog.application.GetPublicLibraryStatsUseCase;
+import com.library.catalog.application.GetPublicTestimonialsUseCase;
 import com.library.catalog.application.SaveDocumentUrlUseCase;
 import com.library.catalog.application.UpdatePublicationUseCase;
 import com.library.catalog.application.UploadPublicationCoverUseCase;
@@ -24,6 +26,8 @@ import com.library.catalog.dto.response.publication.LibrarianPublicationListResp
 import com.library.catalog.dto.response.publication.MostBorrowedPublicationsResponse;
 import com.library.catalog.dto.response.publication.NewestPublicationsResponse;
 import com.library.catalog.dto.response.publication.PublicationDetailResponse;
+import com.library.catalog.dto.response.publication.PublicLibraryStatsResponse;
+import com.library.catalog.dto.response.publication.PublicTestimonialResponse;
 import com.library.shared.constant.RoleConstants;
 import com.library.shared.dto.ApiResponseApp;
 import com.library.shared.dto.PageResponse;
@@ -67,6 +71,8 @@ public class PublicationController {
   private final UploadPublicationCoverUseCase uploadPublicationCoverUseCase;
   private final GetDocumentUploadUrlUseCase getDocumentUploadUrlUseCase;
   private final SaveDocumentUrlUseCase saveDocumentUrlUseCase;
+  private final GetPublicLibraryStatsUseCase getPublicLibraryStatsUseCase;
+  private final GetPublicTestimonialsUseCase getPublicTestimonialsUseCase;
 
   @PostMapping
   @ResponseStatus(HttpStatus.CREATED)
@@ -175,5 +181,21 @@ public class PublicationController {
   ) {
     return ApiResponseApp.success("get most borrowed publications success",
         getMostBorrowedPublicationsUseCase.execute(limit));
+  }
+
+  // public endpoint
+  @GetMapping("/public-stats")
+  public ApiResponseApp<PublicLibraryStatsResponse> getPublicStats() {
+    return ApiResponseApp.success("get public library stats success",
+        getPublicLibraryStatsUseCase.execute());
+  }
+
+  // public endpoint
+  @GetMapping("/testimonials")
+  public ApiResponseApp<List<PublicTestimonialResponse>> getPublicTestimonials(
+      @RequestParam(name = "limit", defaultValue = "3") int limit
+  ) {
+    return ApiResponseApp.success("get public testimonials success",
+        getPublicTestimonialsUseCase.execute(limit));
   }
 }

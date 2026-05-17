@@ -2,11 +2,14 @@ package com.library.recommendation.infrastructure.port;
 
 import com.library.recommendation.infrastructure.persistence.entity.UserInteractionEntity;
 import com.library.recommendation.infrastructure.persistence.repository.UserInteractionJpaRepository;
+import com.library.recommendation.infrastructure.ai.AiGatewayService;
 import com.library.shared.port.UserInteractionPort;
 import com.library.shared.util.TsIdGenerator;
 import com.library.user.domain.enums.InteractionType;
+import java.util.Map;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.jdbc.core.namedparam.NamedParameterJdbcTemplate;
 import org.springframework.scheduling.annotation.Async;
 import org.springframework.stereotype.Service;
 
@@ -16,6 +19,8 @@ import org.springframework.stereotype.Service;
 public class UserInteractionPortImpl implements UserInteractionPort {
 
     private final UserInteractionJpaRepository interactionRepository;
+    private final NamedParameterJdbcTemplate jdbcTemplate;
+    private final AiGatewayService aiGatewayService;
 
     @Override
     @Async("interactionExecutor")
@@ -29,9 +34,20 @@ public class UserInteractionPortImpl implements UserInteractionPort {
                 .build();
             entity.setId(TsIdGenerator.next());
             interactionRepository.save(entity);
+            jdbcTemplate.update(
+                "DELETE FROM public.ai_recommendations WHERE user_id = :userId",
+                Map.of("userId", userId));
+            aiGatewayService.refreshRecommendations(userId, 10);
             log.debug("Recorded interaction: userId={}, pubId={}, type={}", userId, publicationId, interactionType);
         } catch (IllegalArgumentException e) {
             log.warn("Unknown interaction type: {}", interactionType);
+        } catch (Exception e) {
+            log.warn(
+                "Failed to record interaction or refresh AI recommendations: userId={}, pubId={}, type={}, error={}",
+                userId,
+                publicationId,
+                interactionType,
+                e.getMessage());
         }
     }
 }

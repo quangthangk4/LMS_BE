@@ -4,6 +4,7 @@ import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.library.recommendation.application.GetRecommendationsUseCase;
 import com.library.recommendation.dto.response.RecommendationResponse;
+import com.library.recommendation.infrastructure.ai.AiGatewayService;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
@@ -21,6 +22,7 @@ public class GetRecommendationsUseCaseImpl implements GetRecommendationsUseCase 
 
     private final NamedParameterJdbcTemplate jdbcTemplate;
     private final ObjectMapper objectMapper;
+    private final AiGatewayService aiGatewayService;
 
     private static final String FETCH_AI_RECS_SQL = """
         SELECT pub_ids::text, strategy
@@ -44,6 +46,10 @@ public class GetRecommendationsUseCaseImpl implements GetRecommendationsUseCase 
         LEFT JOIN publication_authors pa ON pa.publication_id = p.id
         LEFT JOIN authors a ON a.id = pa.author_id
         WHERE p.id IN (:pubIds)
+          AND EXISTS (
+              SELECT 1 FROM items ai
+              WHERE ai.publication_id = p.id AND ai.status = 'AVAILABLE'
+          )
         GROUP BY p.id, p.title, p.cover_image_url, p.publication_year
         """;
 
@@ -63,10 +69,15 @@ public class GetRecommendationsUseCaseImpl implements GetRecommendationsUseCase 
         LEFT JOIN publication_authors pa ON pa.publication_id = p.id
         LEFT JOIN authors a ON a.id = pa.author_id
         LEFT JOIN (
-            SELECT publication_id, COUNT(*) AS borrow_count
-            FROM borrowing_transactions
-            GROUP BY publication_id
+            SELECT i.publication_id, COUNT(*) AS borrow_count
+            FROM borrowing_transactions bt
+            JOIN items i ON i.id = bt.item_id
+            GROUP BY i.publication_id
         ) bc ON bc.publication_id = p.id
+        WHERE EXISTS (
+            SELECT 1 FROM items ai
+            WHERE ai.publication_id = p.id AND ai.status = 'AVAILABLE'
+        )
         GROUP BY p.id, p.title, p.cover_image_url, p.publication_year, bc.borrow_count
         ORDER BY COALESCE(bc.borrow_count, 0) DESC
         LIMIT :limit
@@ -74,6 +85,14 @@ public class GetRecommendationsUseCaseImpl implements GetRecommendationsUseCase 
 
     @Override
     public List<RecommendationResponse> execute(Long userId, int limit) {
+        List<Long> aiPubIds = fetchFromAiGateway(userId, limit);
+        if (!aiPubIds.isEmpty()) {
+            List<RecommendationResponse> fetched = fetchByIds(aiPubIds);
+            if (!fetched.isEmpty()) {
+                return preserveAiRanking(aiPubIds, fetched, limit);
+            }
+        }
+
         List<Map<String, Object>> rows = jdbcTemplate.queryForList(
             FETCH_AI_RECS_SQL, Map.of("userId", userId));
 
@@ -90,8 +109,32 @@ public class GetRecommendationsUseCaseImpl implements GetRecommendationsUseCase 
         }
 
         List<RecommendationResponse> fetched = fetchByIds(pubIds);
+        if (fetched.isEmpty()) {
+            return fetchFallback(limit);
+        }
 
-        // preserve AI ranking order
+        return preserveAiRanking(pubIds, fetched, limit);
+    }
+
+    private List<Long> fetchFromAiGateway(Long userId, int limit) {
+        try {
+            AiGatewayService.AiRecommendationResult result =
+                aiGatewayService.getRecommendations(userId, limit);
+            if (result == null || result.publicationIds() == null) {
+                return Collections.emptyList();
+            }
+            return result.publicationIds().stream().limit(limit).toList();
+        } catch (Exception e) {
+            log.warn("AI recommendation gateway failed for userId={}, falling back to cache/local", userId, e);
+            return Collections.emptyList();
+        }
+    }
+
+    private List<RecommendationResponse> preserveAiRanking(
+        List<Long> pubIds,
+        List<RecommendationResponse> fetched,
+        int limit
+    ) {
         Map<Long, RecommendationResponse> byId = fetched.stream()
             .collect(Collectors.toMap(RecommendationResponse::getPublicationId, r -> r));
 

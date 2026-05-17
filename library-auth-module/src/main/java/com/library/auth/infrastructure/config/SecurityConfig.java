@@ -33,7 +33,11 @@ public class SecurityConfig {
       "/api/v1/publications/search",
       "/api/v1/publications/{id}",
       "/api/v1/publications/{id}/items",
+      "/api/v1/publications/{id}/similar",
       "/api/v1/publications/most-borrowed",
+      "/api/v1/publications/public-stats",
+      "/api/v1/publications/testimonials",
+      "/api/v1/categories",
       "/api/v1/authors/**",
       "/api/v1/publications/{id}/ratings",
       "/api/v1/publications/{publicationId}/ratings/summary",
@@ -54,6 +58,11 @@ public class SecurityConfig {
       "/api/v1/auth/**",
   };
 
+  public static final String[] AI_PUBLIC_ENDPOINTS = {
+      "/api/v1/ai/semantic-search",
+      "/api/ai/callback",
+  };
+
   @Bean
   public SecurityFilterChain securityFilterChain(HttpSecurity http) throws Exception {
     http.csrf(AbstractHttpConfigurer::disable);
@@ -64,6 +73,7 @@ public class SecurityConfig {
         .requestMatchers(SWAGGER_ENDPOINTS).permitAll()
         .requestMatchers(AUTH_ENDPOINTS).permitAll()
         .requestMatchers(WEBSOCKET_ENDPOINTS).permitAll()
+        .requestMatchers(HttpMethod.POST, AI_PUBLIC_ENDPOINTS).permitAll()
         .requestMatchers(HttpMethod.GET, PUBLIC_ENDPOINTS).permitAll()
         .anyRequest().authenticated()
     );

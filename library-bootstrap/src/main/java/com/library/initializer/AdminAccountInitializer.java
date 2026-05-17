@@ -29,15 +29,15 @@ public class AdminAccountInitializer implements CommandLineRunner {
   // Default admin credentials
   private static final String ADMIN_EMAIL = "admin@hcmut.edu.vn";
   private static final String ADMIN_PASSWORD = "admin";
-  private static final String ADMIN_FULL_NAME = "System Administrator";
+  private static final String ADMIN_FULL_NAME = "Hồ Sỹ Thắng - Admin";
 
   private static final String STUDENT_EMAIL = "student@hcmut.edu.vn";
   private static final String STUDENT_PASSWORD = "student";
-  private static final String STUDENT_FULL_NAME = "System Administrator";
+  private static final String STUDENT_FULL_NAME = "Hồ Sỹ Thắng - Student";
 
   private static final String LIBRARIAN_EMAIL = "librarian@hcmut.edu.vn";
   private static final String LIBRARIAN_PASSWORD = "librarian";
-  private static final String LIBRARIAN_FULL_NAME = "System Administrator";
+  private static final String LIBRARIAN_FULL_NAME = "Hồ Sỹ Thắng - Librarian";
 
   @Override
   public void run(String... args) {

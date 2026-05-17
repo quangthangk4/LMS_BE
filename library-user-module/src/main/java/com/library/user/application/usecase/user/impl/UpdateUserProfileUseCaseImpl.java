@@ -39,9 +39,6 @@ public class UpdateUserProfileUseCaseImpl implements UpdateUserProfileUseCase {
     // Update profile
     UserProfile newProfile = userMapper.mergeAndMapToUserProfile(userProfile, request);
     user.updateProfile(newProfile);
-    if (request.aiPersonalizationEnabled() != null) {
-      user.toggleAIPersonalization(request.aiPersonalizationEnabled());
-    }
 
     // Save user
     User updatedUser = userRepository.save(user);

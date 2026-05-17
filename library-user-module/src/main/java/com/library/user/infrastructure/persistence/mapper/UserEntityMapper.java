@@ -32,7 +32,6 @@ public class UserEntityMapper {
         .status(user.getStatus())
         .studentId(user.getProfile().getStudentId())
         .lastLoginAt(user.getLastLoginAt())
-        .aiPersonalizationEnabled(user.isAiPersonalizationEnabled())
         .faculty(user.getProfile().getFaculty())
         .provider(user.getProvider())
         .providerId(user.getProviderId())
@@ -84,7 +83,6 @@ public class UserEntityMapper {
         profile,
         roles,
         entity.getStatus(),
-        entity.getAiPersonalizationEnabled(),
         entity.getLastLoginAt(),
         entity.getProvider(),
         entity.getProviderId(),
