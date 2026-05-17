@@ -6,12 +6,15 @@ import com.library.recommendation.infrastructure.ai.AiGatewayService;
 import com.library.shared.port.UserInteractionPort;
 import com.library.shared.util.TsIdGenerator;
 import com.library.user.domain.enums.InteractionType;
+import java.time.Instant;
+import java.time.temporal.ChronoUnit;
 import java.util.Map;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.jdbc.core.namedparam.NamedParameterJdbcTemplate;
 import org.springframework.scheduling.annotation.Async;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
 @Slf4j
 @Service
@@ -24,9 +27,22 @@ public class UserInteractionPortImpl implements UserInteractionPort {
 
     @Override
     @Async("interactionExecutor")
+    @Transactional
     public void record(Long userId, Long publicationId, String interactionType) {
         try {
             InteractionType type = InteractionType.valueOf(interactionType);
+
+            // Dedup WATCH: chỉ lưu 1 record mỗi 24h cho cùng user + publication
+            if (type == InteractionType.WATCH) {
+                Instant since = Instant.now().minus(24, ChronoUnit.HOURS);
+                boolean alreadyViewed = interactionRepository
+                    .existsByUserIdAndPublicationIdAndTypeAndCreatedAtAfter(userId, publicationId, type, since);
+                if (alreadyViewed) {
+                    log.debug("Skip duplicate WATCH: userId={}, pubId={}", userId, publicationId);
+                    return;
+                }
+            }
+
             UserInteractionEntity entity = UserInteractionEntity.builder()
                 .userId(userId)
                 .publicationId(publicationId)

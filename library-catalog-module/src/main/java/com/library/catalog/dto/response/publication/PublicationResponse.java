@@ -34,4 +34,5 @@ public class PublicationResponse {
     private Integer aiChunksCount;
     private Integer aiVectorsCount;
     private Instant aiProcessedAt;
+    private String tableOfContents;
 }

@@ -1,6 +1,8 @@
 package com.library.catalog.presentation.controller;
 
+import com.library.catalog.application.BookLookupUseCase;
 import com.library.catalog.application.CreatePublicationUseCase;
+import com.library.catalog.application.DeletePublicationUseCase;
 import com.library.catalog.application.GetDocumentUploadUrlUseCase;
 import com.library.catalog.application.GetListPublicationForLibrarianUseCase;
 import com.library.catalog.application.RecordPublicationViewUseCase;
@@ -20,6 +22,7 @@ import com.library.catalog.dto.request.publication.PublicationSearchRequest;
 import com.library.catalog.dto.request.publication.SaveDocumentUrlRequest;
 import com.library.catalog.dto.request.publication.UpdatePublicationRequest;
 import com.library.catalog.dto.response.item.ItemsByPublicationIdResponse;
+import com.library.catalog.dto.response.publication.BookLookupResponse;
 import com.library.catalog.dto.response.publication.DocumentUploadUrlResponse;
 import com.library.catalog.dto.response.publication.PublicSearchResult;
 import com.library.catalog.dto.response.publication.LibrarianPublicationListResponse;
@@ -40,6 +43,7 @@ import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
+import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.ModelAttribute;
 import org.springframework.web.bind.annotation.PathVariable;
@@ -58,6 +62,8 @@ import org.springframework.web.multipart.MultipartFile;
 @RequiredArgsConstructor
 public class PublicationController {
 
+  private final BookLookupUseCase bookLookupUseCase;
+  private final DeletePublicationUseCase deletePublicationUseCase;
   private final GetListPublicationForLibrarianUseCase getListPublicationForLibrarianUseCase;
   private final GetPublicationByIdByUseCase getPublicationByIdByUseCase;
   private final RecordPublicationViewUseCase recordPublicationViewUseCase;
@@ -110,6 +116,13 @@ public class PublicationController {
   }
 
 
+  @DeleteMapping("/{id}")
+  @RequiresRole(RoleConstants.LIBRARIAN)
+  public ApiResponseApp<Void> deletePublication(@PathVariable("id") Long id) {
+    deletePublicationUseCase.execute(id);
+    return ApiResponseApp.success("Xóa ấn phẩm thành công");
+  }
+
   @PutMapping("/{id}")
   @RequiresRole(RoleConstants.LIBRARIAN)
   public ApiResponseApp<Void> updatePublication(
@@ -120,6 +133,13 @@ public class PublicationController {
     return ApiResponseApp.success("update success");
   }
 
+
+  @GetMapping("/book-lookup")
+  @RequiresRole(RoleConstants.LIBRARIAN)
+  public ApiResponseApp<BookLookupResponse> bookLookup(
+      @RequestParam(name = "q") String query) {
+    return ApiResponseApp.success(bookLookupUseCase.execute(query));
+  }
 
   // public endpoint
   @GetMapping("/search")

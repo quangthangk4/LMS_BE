@@ -10,17 +10,25 @@ import org.springframework.http.converter.HttpMessageNotReadableException;
 import org.springframework.web.bind.MethodArgumentNotValidException;
 import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.RestControllerAdvice;
+import org.springframework.web.context.request.WebRequest;
 
 @Slf4j
 @RestControllerAdvice
 public class GlobalExceptionHandler {
 
+    private String resolveMessage(ErrorCode errorCode, WebRequest request) {
+        String lang = request.getHeader("Accept-Language");
+        return (lang != null && lang.startsWith("vi"))
+            ? errorCode.getMessageVi()
+            : errorCode.getMessage();
+    }
+
     @ExceptionHandler(AppException.class)
-    public ResponseEntity<ApiResponseApp<?>> handleAppException(AppException e) {
+    public ResponseEntity<ApiResponseApp<?>> handleAppException(AppException e, WebRequest request) {
         ErrorCode errorCode = e.getErrorCode();
         return ResponseEntity
                 .status(errorCode.getStatus())
-                .body(ApiResponseApp.error(errorCode.getCode(), errorCode.getMessage()));
+                .body(ApiResponseApp.error(errorCode.getCode(), resolveMessage(errorCode, request)));
     }
 
     @ExceptionHandler(DomainException.class)

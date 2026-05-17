@@ -137,6 +137,7 @@ public class PublicationRepositoryImpl implements PublicationRepositoryCustom {
             p.id, p.isbn, p.title, p.subtitle, p.description, p.language,
             p.number_of_pages, p.ai_summary, p.ai_target_audience, p.file_url,
             p.publication_year, p.edition, p.cover_image_url, p.size, p.weight,
+            p.call_number, p.table_of_contents,
             (SELECT COUNT(*) FROM borrowing_transactions bt
              JOIN items bi ON bi.id = bt.item_id
              WHERE bi.publication_id = p.id) AS borrow_count,
@@ -178,6 +179,8 @@ public class PublicationRepositoryImpl implements PublicationRepositoryCustom {
         .coverImageUrl((String) pub.get("cover_image_url"))
         .size((String) pub.get("size"))
         .weight(toDouble(pub.get("weight")))
+        .callNumber((String) pub.get("call_number"))
+        .tableOfContents((String) pub.get("table_of_contents"))
         .borrowCount(toLong(pub.get("borrow_count")))
         .viewCount(toLong(pub.get("view_count")))
         .aiProcessingStatus((String) pub.get("ai_processing_status"))

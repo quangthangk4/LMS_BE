@@ -16,15 +16,14 @@ public class CreatePublisherUseCaseImpl implements CreatePublisherUseCase {
 
     @Override
     @Transactional
-    public void execute(String name) {
+    public Long execute(String name) {
         if (name == null || name.isBlank()) {
             throw new IllegalArgumentException("Publisher name cannot be empty");
         }
-
         PublisherEntity entity = new PublisherEntity();
         entity.setId(TsIdGenerator.next());
         entity.setName(name.replace("\"", ""));
-
         publisherJpaRepository.save(entity);
+        return entity.getId();
     }
 }

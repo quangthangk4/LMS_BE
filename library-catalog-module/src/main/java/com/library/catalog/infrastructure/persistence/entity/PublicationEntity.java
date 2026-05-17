@@ -54,6 +54,9 @@ public class PublicationEntity extends BaseEntity {
     @Column(name = "call_number", length = 100)
     private String callNumber;
 
+    @Column(name = "table_of_contents", columnDefinition = "TEXT")
+    private String tableOfContents;
+
     private Long publisherId;
     public PublicationEntity() {}
 }

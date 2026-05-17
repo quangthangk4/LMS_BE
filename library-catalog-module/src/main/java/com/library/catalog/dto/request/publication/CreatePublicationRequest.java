@@ -1,5 +1,6 @@
 package com.library.catalog.dto.request.publication;
 
+import com.fasterxml.jackson.databind.JsonNode;
 import com.library.catalog.domain.enums.FacultyTarget;
 
 public record CreatePublicationRequest (
@@ -16,9 +17,11 @@ public record CreatePublicationRequest (
     String size, // e.g., "20x15x3 cm"
     Double weight, // in grams
     Long publisherId,
+    String coverImageUrl,
     Long[] authorIds,
     Long[] categoryIds,
     Long[] tagIds,
-    String callNumber
+    String callNumber,
+    JsonNode tableOfContents
 ){
 }

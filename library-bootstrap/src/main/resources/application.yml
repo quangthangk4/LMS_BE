@@ -115,6 +115,10 @@ ai:
     read-timeout-ms: ${AI_GATEWAY_READ_TIMEOUT_MS:5000}
     processing-read-timeout-ms: ${AI_GATEWAY_PROCESSING_READ_TIMEOUT_MS:180000}
 
+google:
+  books:
+    api-key: ${GOOGLE_BOOKS_API_KEY:}
+
 #logging:
 #  level:
 #    root: INFO

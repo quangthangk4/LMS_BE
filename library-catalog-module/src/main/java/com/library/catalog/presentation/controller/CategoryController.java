@@ -17,6 +17,7 @@ import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
 import java.util.List;
+import java.util.Map;
 
 @Slf4j
 @RestController
@@ -44,9 +45,9 @@ public class CategoryController {
 
     @PostMapping
     @RequiresRole(RoleConstants.LIBRARIAN)
-    public ApiResponseApp<Void> createCategory(@RequestBody String name) {
+    public ApiResponseApp<Map<String, Object>> createCategory(@RequestBody String name) {
         log.info("Create category: {}", name);
-        createCategoryUseCase.execute(name);
-        return ApiResponseApp.success("create category success");
+        Long id = createCategoryUseCase.execute(name);
+        return ApiResponseApp.created(Map.of("id", String.valueOf(id), "name", name.replace("\"", "")));
     }
 }
