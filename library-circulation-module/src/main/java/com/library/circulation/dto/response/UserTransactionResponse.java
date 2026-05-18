@@ -27,4 +27,5 @@ public class UserTransactionResponse {
     private Instant returnedDate;
     private TransactionStatus status;
     private BigDecimal fineAmount;
+    private Boolean reviewed;
 }

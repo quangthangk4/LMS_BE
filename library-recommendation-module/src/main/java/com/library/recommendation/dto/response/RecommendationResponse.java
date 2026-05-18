@@ -18,5 +18,6 @@ public class RecommendationResponse {
     private Integer availableItems;
     private Double ratingAverage;
     private Integer ratingCount;
+    private Long borrowCount;
     private List<String> authorNames;
 }

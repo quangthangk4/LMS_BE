@@ -16,4 +16,9 @@ public class BorrowingCheckerImpl implements BorrowingChecker {
   public boolean hasBorrowedPublication(Long userId, Long publicationId) {
     return borrowingTransactionJpaRepository.existsByUserIdAndPublicationId(userId, publicationId);
   }
+
+  @Override
+  public boolean hasReturnedPublication(Long userId, Long publicationId) {
+    return borrowingTransactionJpaRepository.existsReturnedByUserIdAndPublicationId(userId, publicationId);
+  }
 }

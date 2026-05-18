@@ -28,6 +28,7 @@ public interface UserMapper {
   @Mapping(target = "status", source = "status")
   @Mapping(target = "roles", source = "roles")
   @Mapping(target = "creditScore", source = "creditScore")
+  @Mapping(target = "contributionScore", source = "contributionScore")
   UserResponse toResponse(User user);
 
   @Mapping(target = "id", source = "id.value")

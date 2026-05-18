@@ -35,6 +35,8 @@ public class UserEntityMapper {
         .faculty(user.getProfile().getFaculty())
         .provider(user.getProvider())
         .providerId(user.getProviderId())
+        .creditScore(user.getCreditScore())
+        .contributionScore(user.getContributionScore())
         .build();
 
     // Set ID if exists
@@ -86,7 +88,8 @@ public class UserEntityMapper {
         entity.getLastLoginAt(),
         entity.getProvider(),
         entity.getProviderId(),
-        entity.getCreditScore()
+        entity.getCreditScore(),
+        entity.getContributionScore()
     );
   }
 

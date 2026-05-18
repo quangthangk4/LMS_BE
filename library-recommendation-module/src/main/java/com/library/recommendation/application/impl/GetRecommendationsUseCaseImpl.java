@@ -40,11 +40,14 @@ public class GetRecommendationsUseCaseImpl implements GetRecommendationsUseCase 
              WHERE i.publication_id = p.id AND i.status = 'AVAILABLE')       AS available_items,
             COALESCE(ROUND(CAST(AVG(r.star) AS numeric), 1), 0.0)            AS rating_average,
             COUNT(DISTINCT r.id)                                              AS rating_count,
+            COUNT(DISTINCT bt.id)                                             AS borrow_count,
             STRING_AGG(DISTINCT a.name, ', ')                                AS author_names
         FROM publications p
         LEFT JOIN ratings r ON r.publication_id = p.id
         LEFT JOIN publication_authors pa ON pa.publication_id = p.id
         LEFT JOIN authors a ON a.id = pa.author_id
+        LEFT JOIN items bi ON bi.publication_id = p.id
+        LEFT JOIN borrowing_transactions bt ON bt.item_id = bi.id
         WHERE p.id IN (:pubIds)
           AND EXISTS (
               SELECT 1 FROM items ai
@@ -63,6 +66,7 @@ public class GetRecommendationsUseCaseImpl implements GetRecommendationsUseCase 
              WHERE i.publication_id = p.id AND i.status = 'AVAILABLE')       AS available_items,
             COALESCE(ROUND(CAST(AVG(r.star) AS numeric), 1), 0.0)            AS rating_average,
             COUNT(DISTINCT r.id)                                              AS rating_count,
+            COALESCE(bc.borrow_count, 0)                                      AS borrow_count,
             STRING_AGG(DISTINCT a.name, ', ')                                AS author_names
         FROM publications p
         LEFT JOIN ratings r ON r.publication_id = p.id
@@ -184,6 +188,7 @@ public class GetRecommendationsUseCaseImpl implements GetRecommendationsUseCase 
             .availableItems(((Number) row.get("available_items")).intValue())
             .ratingAverage(((Number) row.get("rating_average")).doubleValue())
             .ratingCount(((Number) row.get("rating_count")).intValue())
+            .borrowCount(((Number) row.getOrDefault("borrow_count", 0)).longValue())
             .authorNames(authorNames)
             .build();
     }

@@ -65,6 +65,10 @@ public class UserEntity extends BaseEntity {
     @Builder.Default
     private int creditScore = 100;
 
+    @Column(nullable = false)
+    @Builder.Default
+    private int contributionScore = 0;
+
     @ManyToMany
     @JoinTable(
         name = "user_roles",

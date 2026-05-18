@@ -19,4 +19,6 @@ public interface NewestPublicationProjection {
   Double getRatingAverage();
 
   Integer getRatingCount();
+
+  Long getBorrowCount();
 }

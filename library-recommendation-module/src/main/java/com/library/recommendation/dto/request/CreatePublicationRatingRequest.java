@@ -14,6 +14,8 @@ import lombok.NoArgsConstructor;
 @AllArgsConstructor
 public class CreatePublicationRatingRequest {
 
+  private Long transactionId;
+
   @Min(value = 1, message = "Star must be at least 1")
   @Max(value = 5, message = "Star must be at most 5")
   private int star;

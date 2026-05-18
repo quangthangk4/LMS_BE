@@ -111,9 +111,9 @@ public class ReturnBookUseCaseImpl implements ReturnBookUseCase {
         kafkaTemplate.send(KafkaTopics.NOTIFICATION_SEND, new NotificationMessage(
             entity.getUserId(),
             "RETURN_CONFIRMED",
-            "Trả sách thành công",
-            String.format("Bạn đã trả sách '%s' thành công.", item.publicationTitle()),
-            null,
+            "Trả sách thành công - mời bạn đánh giá",
+            String.format("Bạn đã trả sách '%s' thành công. Hãy chia sẻ trải nghiệm để nhận 5 điểm đóng góp.", item.publicationTitle()),
+            String.format("/publicpage/book/%d?review=1", item.publicationId()),
             transactionId
         ));
         kafkaTemplate.send(KafkaTopics.LIBRARY_EMAIL, new LibraryEmailMessage(

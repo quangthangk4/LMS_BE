@@ -24,10 +24,12 @@ public interface PublicationJpaRepository extends JpaRepository<PublicationEntit
           p.createdAt       AS createdAt,
           SUM(CASE WHEN i.status = 'AVAILABLE' THEN 1 ELSE 0 END) AS availableItems,
           AVG(r.star)       AS ratingAverage,
-          COUNT(DISTINCT r.id) AS ratingCount
+          COUNT(DISTINCT r.id) AS ratingCount,
+          COUNT(DISTINCT bt.id) AS borrowCount
       FROM PublicationEntity p
       LEFT JOIN ItemEntity i   ON i.publicationId = p.id
       LEFT JOIN RatingEntity r ON r.publicationId = p.id
+      LEFT JOIN BorrowingTransactionEntity bt ON bt.itemId = i.id
       GROUP BY p.id, p.title, p.coverImageUrl, p.publicationYear, p.createdAt
       ORDER BY p.createdAt DESC
       """)

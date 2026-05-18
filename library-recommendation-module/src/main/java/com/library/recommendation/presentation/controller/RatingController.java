@@ -11,6 +11,8 @@ import com.library.recommendation.dto.response.RatingReplyResponse;
 import com.library.shared.constant.RoleConstants;
 import com.library.shared.dto.ApiResponseApp;
 import com.library.shared.dto.PageResponse;
+import com.library.shared.exception.AppException;
+import com.library.shared.exception.ErrorCode;
 import com.library.shared.kafka.KafkaTopics;
 import com.library.shared.kafka.event.NotificationMessage;
 import com.library.shared.util.RequiresAuthentication;
@@ -19,6 +21,7 @@ import com.library.shared.util.SecurityEvaluator;
 import com.library.shared.util.TsIdGenerator;
 import jakarta.validation.Valid;
 import java.util.ArrayList;
+import java.time.Instant;
 import java.util.List;
 import java.util.Map;
 import lombok.RequiredArgsConstructor;
@@ -30,6 +33,7 @@ import org.springframework.kafka.core.KafkaTemplate;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.PutMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
@@ -128,6 +132,39 @@ public class RatingController {
     return ApiResponseApp.success(Map.of("helpful", helpful, "helpfulCount", helpfulCount == null ? 0 : helpfulCount));
   }
 
+  @PutMapping("/publications/{publicationId}/ratings/{ratingId}")
+  @RequiresAuthentication
+  public ApiResponseApp<Void> updateRating(
+      @PathVariable("publicationId") Long publicationId,
+      @PathVariable("ratingId") Long ratingId,
+      @RequestBody @Valid CreatePublicationRatingRequest request) {
+    Long userId = securityEvaluator.getCurrentUserId();
+    List<Map<String, Object>> rows = jdbcTemplate.queryForList(
+        """
+        SELECT id, created_at
+        FROM ratings
+        WHERE id = ? AND publication_id = ? AND user_id = ?
+        """,
+        ratingId,
+        publicationId,
+        userId
+    );
+    if (rows.isEmpty()) {
+      throw new AppException(ErrorCode.RATING_NOT_FOUND);
+    }
+    Instant createdAt = toInstant(rows.get(0).get("created_at"));
+    if (createdAt == null || createdAt.plus(java.time.Duration.ofDays(7)).isBefore(Instant.now())) {
+      throw new AppException(ErrorCode.RATING_EDIT_WINDOW_EXPIRED);
+    }
+    jdbcTemplate.update(
+        "UPDATE ratings SET star = ?, comment = ?, updated_at = NOW() WHERE id = ?",
+        request.getStar(),
+        request.getComment().trim(),
+        ratingId
+    );
+    return ApiResponseApp.success("Update rating successful");
+  }
+
   @PostMapping("/publications/{publicationId}/ratings/{ratingId}/replies")
   @RequiresRole(RoleConstants.LIBRARIAN)
   public ApiResponseApp<RatingReplyResponse> replyToRating(
@@ -223,7 +260,19 @@ public class RatingController {
     ratings.forEach(rating -> {
       rating.setReplies(repliesByRatingId.getOrDefault(rating.getRatingId(), List.of()));
       rating.setHelpfulByCurrentUser(likedIds.contains(rating.getRatingId()));
+      boolean editable = currentUserId != null
+          && currentUserId.equals(rating.getUserId())
+          && rating.getEditableUntil() != null
+          && !rating.getEditableUntil().isBefore(Instant.now());
+      rating.setEditableByCurrentUser(editable);
     });
+  }
+
+  private Instant toInstant(Object value) {
+    if (value instanceof java.sql.Timestamp ts) return ts.toInstant();
+    if (value instanceof java.time.OffsetDateTime odt) return odt.toInstant();
+    if (value instanceof Instant instant) return instant;
+    return null;
   }
 
   private void notifyReviewOwner(

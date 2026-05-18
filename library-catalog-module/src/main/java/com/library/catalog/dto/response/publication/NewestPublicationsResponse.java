@@ -21,4 +21,5 @@ public class NewestPublicationsResponse {
   private List<String> authorNames;
   private Double ratingAverage;
   private Integer ratingCount;
+  private Long borrowCount;
 }

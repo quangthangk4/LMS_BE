@@ -72,15 +72,30 @@ public interface BorrowingTransactionJpaRepository extends
       @Param("publicationId") Long publicationId
   );
 
+  @Query("""
+          SELECT COUNT(t) > 0
+          FROM BorrowingTransactionEntity t
+          JOIN ItemEntity i ON t.itemId = i.id
+          WHERE t.userId = :userId
+            AND i.publicationId = :publicationId
+            AND t.status = 'RETURNED'
+      """)
+  boolean existsReturnedByUserIdAndPublicationId(
+      @Param("userId") Long userId,
+      @Param("publicationId") Long publicationId
+  );
+
   @Query(value = """
           SELECT new com.library.circulation.dto.response.UserTransactionResponse(
               t.id, p.id, p.title, p.coverImageUrl, i.barcode, i.branch, i.location,
-              t.pickedUpDeadline, t.borrowedDate, t.dueDate, t.returnedDate, t.status, f.fineAmount
+              t.pickedUpDeadline, t.borrowedDate, t.dueDate, t.returnedDate, t.status, f.fineAmount,
+              CASE WHEN r.id IS NOT NULL THEN true ELSE false END
           )
           FROM BorrowingTransactionEntity t
           JOIN ItemEntity i ON t.itemId = i.id
           JOIN PublicationEntity p ON i.publicationId = p.id
           LEFT JOIN FineEntity f ON t.id = f.transactionId
+          LEFT JOIN RatingEntity r ON r.transactionId = t.id
           WHERE t.userId = :userId
       """,
       countQuery = "SELECT COUNT(t) FROM BorrowingTransactionEntity t WHERE t.userId = :userId")

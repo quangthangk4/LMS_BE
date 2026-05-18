@@ -118,8 +118,11 @@ public enum ErrorCode {
   BUILD_OAUTH2_URL_FAILED(2605, "Failed to build OAuth2 URL", "Không thể tạo URL đăng nhập Google", HttpStatus.BAD_REQUEST),
 
   // Rating (2700-2799)
-  RATING_ALREADY_EXISTS(2700, "User already has a rating for this publication", "Bạn đã đánh giá ấn phẩm này rồi", HttpStatus.CONFLICT),
-  USER_NOT_BORROWED_PUBLICATION(2701, "User has not borrowed this publication and cannot rate it", "Bạn cần mượn ấn phẩm này trước khi có thể đánh giá", HttpStatus.FORBIDDEN),
+  RATING_ALREADY_EXISTS(2700, "This loan transaction has already been reviewed", "Giao dịch mượn này đã được đánh giá", HttpStatus.CONFLICT),
+  USER_NOT_BORROWED_PUBLICATION(2701, "An eligible returned loan transaction is required to review this publication", "Bạn cần có giao dịch mượn đã trả còn hiệu lực để đánh giá ấn phẩm này", HttpStatus.FORBIDDEN),
+  RATING_REVIEW_WINDOW_EXPIRED(2702, "The review period has expired. Reviews must be submitted within 7 days after return", "Thời hạn đánh giá đã hết. Đánh giá cần được gửi trong vòng 7 ngày kể từ ngày trả sách", HttpStatus.FORBIDDEN),
+  RATING_EDIT_WINDOW_EXPIRED(2703, "The review edit period has expired. Reviews can only be edited within 7 days after submission", "Thời hạn chỉnh sửa đánh giá đã hết. Đánh giá chỉ có thể được chỉnh sửa trong vòng 7 ngày kể từ khi gửi", HttpStatus.FORBIDDEN),
+  RATING_NOT_FOUND(2704, "Rating not found", "Không tìm thấy đánh giá", HttpStatus.NOT_FOUND),
 
   // Notification errors (3100-3199)
   NOTIFICATION_NOT_FOUND(3100, "Notification not found", "Không tìm thấy thông báo", HttpStatus.NOT_FOUND);

@@ -15,6 +15,7 @@ import org.springframework.kafka.annotation.KafkaListener;
 import org.springframework.messaging.simp.SimpMessagingTemplate;
 import org.springframework.stereotype.Component;
 import org.springframework.transaction.annotation.Transactional;
+import java.time.Instant;
 
 @Slf4j
 @Component
@@ -46,6 +47,9 @@ public class NotificationEventConsumer {
                 .build();
             userNotification.setId(TsIdGenerator.next());
             userNotificationJpaRepository.save(userNotification);
+            Instant receivedAt = userNotification.getCreatedAt() != null
+                ? userNotification.getCreatedAt()
+                : Instant.now();
 
             NotificationResponse response = NotificationResponse.builder()
                 .userNotificationId(userNotification.getId())
@@ -56,7 +60,7 @@ public class NotificationEventConsumer {
                 .link(notification.getLink())
                 .referenceId(notification.getReferenceId())
                 .isRead(false)
-                .receivedAt(userNotification.getCreatedAt())
+                .receivedAt(receivedAt)
                 .build();
 
             messagingTemplate.convertAndSendToUser(

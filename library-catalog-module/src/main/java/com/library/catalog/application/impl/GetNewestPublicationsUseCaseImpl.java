@@ -57,6 +57,7 @@ public class GetNewestPublicationsUseCaseImpl implements GetNewestPublicationsUs
             .authorNames(authorsByPubId.getOrDefault(projection.getPublicationId(), List.of()))
             .ratingAverage(projection.getRatingAverage())
             .ratingCount(projection.getRatingCount())
+            .borrowCount(projection.getBorrowCount())
             .build()).toList();
   }
 

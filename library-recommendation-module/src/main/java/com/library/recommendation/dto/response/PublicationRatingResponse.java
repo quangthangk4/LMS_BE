@@ -19,6 +19,11 @@ public class PublicationRatingResponse {
 
   @JsonSerialize(using = ToStringSerializer.class)
   private Long ratingId;
+  @JsonSerialize(using = ToStringSerializer.class)
+  private Long userId;
+  @JsonSerialize(using = ToStringSerializer.class)
+  private Long transactionId;
+  private String itemBarcode;
   private int star;
   private String comment;
   private int helpfulCount;
@@ -28,14 +33,20 @@ public class PublicationRatingResponse {
   private String studentId;
   private FacultyEnum faculty;
   private Instant createdAt;
+  private Instant editableUntil;
+  private boolean editableByCurrentUser = false;
   @Builder.Default
   private boolean helpfulByCurrentUser = false;
   @Builder.Default
   private List<RatingReplyResponse> replies = new ArrayList<>();
 
-  public PublicationRatingResponse(Long ratingId, int star, String comment, int helpfulCount,
+  public PublicationRatingResponse(Long ratingId, Long userId, Long transactionId, String itemBarcode,
+      int star, String comment, int helpfulCount,
       String fullName, String profilePictureUrl, String studentId, FacultyEnum faculty, Instant createdAt) {
     this.ratingId = ratingId;
+    this.userId = userId;
+    this.transactionId = transactionId;
+    this.itemBarcode = itemBarcode;
     this.star = star;
     this.comment = comment;
     this.helpfulCount = helpfulCount;
@@ -44,6 +55,7 @@ public class PublicationRatingResponse {
     this.studentId = studentId;
     this.faculty = faculty;
     this.createdAt = createdAt;
+    this.editableUntil = createdAt != null ? createdAt.plus(java.time.Duration.ofDays(7)) : null;
     this.helpfulByCurrentUser = false;
     this.replies = new ArrayList<>();
   }

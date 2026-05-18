@@ -15,7 +15,8 @@ public interface RatingJpaRepository extends JpaRepository<RatingEntity, Long> {
 
   @Query(value = """
       SELECT new com.library.recommendation.dto.response.PublicationRatingResponse(
-          r.id, r.star, r.comment, r.helpfulCount, u.fullName, u.profilePictureUrl, u.studentId, u.faculty, r.createdAt)
+          r.id, r.userId, r.transactionId, r.itemBarcode, r.star, r.comment, r.helpfulCount,
+          u.fullName, u.profilePictureUrl, u.studentId, u.faculty, r.createdAt)
        FROM RatingEntity r
        JOIN UserEntity u ON r.userId = u.id
        WHERE r.publicationId = :publicationId

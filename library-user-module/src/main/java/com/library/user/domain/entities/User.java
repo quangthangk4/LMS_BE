@@ -36,6 +36,7 @@ public class User {
   private final String provider;
   private final String providerId;
   private int creditScore;
+  private int contributionScore;
 
   // Domain events
   private final List<Object> domainEvents = new ArrayList<>();
@@ -52,7 +53,8 @@ public class User {
       LocalDateTime lastLoginAt,
       String provider,
       String providerId,
-      int creditScore) {
+      int creditScore,
+      int contributionScore) {
     return User.builder()
         .id(id)
         .email(email)
@@ -64,6 +66,7 @@ public class User {
         .provider(provider)
         .providerId(providerId)
         .creditScore(creditScore)
+        .contributionScore(contributionScore)
         .build();
   }
 
@@ -86,6 +89,7 @@ public class User {
         .status(UserStatus.ACTIVE)
         .profile(profile)
         .creditScore(DEFAULT_SCORE)
+        .contributionScore(0)
         .build();
   }
 
@@ -103,6 +107,7 @@ public class User {
         .status(UserStatus.INACTIVE)
         .profile(profile)
         .creditScore(DEFAULT_SCORE)
+        .contributionScore(0)
         .build();
 
     user.addDomainEvent(new UserRegisteredEvent(user.getId(), user.getEmail().getValue(),
@@ -132,6 +137,7 @@ public class User {
         .provider(provider)
         .providerId(providerId)
         .creditScore(DEFAULT_SCORE)
+        .contributionScore(0)
         .build();
   }
 

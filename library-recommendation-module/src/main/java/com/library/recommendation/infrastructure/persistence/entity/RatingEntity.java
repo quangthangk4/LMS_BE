@@ -33,6 +33,12 @@ public class RatingEntity extends BaseEntity {
   @Column(nullable = false)
   private Long publicationId;
 
+  @Column(name = "transaction_id")
+  private Long transactionId;
+
+  @Column(name = "item_barcode", length = 50)
+  private String itemBarcode;
+
   @Column(nullable = false)
   private int star;
 

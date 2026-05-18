@@ -20,7 +20,8 @@ public record UserResponse(
     Set<RoleResponse> roles,
     String status,
     LocalDateTime lastLoginAt,
-    Long creditScore
+    Long creditScore,
+    Long contributionScore
 ) {
 
 }
