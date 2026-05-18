@@ -61,6 +61,7 @@ public class SecurityConfig {
   public static final String[] AI_PUBLIC_ENDPOINTS = {
       "/api/v1/ai/semantic-search",
       "/api/ai/callback",
+      "/api/v1/fines/payments/payos/webhook",
   };
 
   @Bean

@@ -131,7 +131,10 @@ public class SearchPublicationsUseCaseImpl implements SearchPublicationsUseCase 
             params.addValue("kw", kw).addValue("kwExact", req.getKeyword().trim());
         }
 
-        if (req.getCategoryId() != null) {
+        if (req.getCategoryIds() != null && !req.getCategoryIds().isEmpty()) {
+            sb.append("AND EXISTS (SELECT 1 FROM publication_categories pc WHERE pc.publication_id = p.id AND pc.category_id IN (:categoryIds)) ");
+            params.addValue("categoryIds", req.getCategoryIds());
+        } else if (req.getCategoryId() != null) {
             sb.append("AND EXISTS (SELECT 1 FROM publication_categories pc WHERE pc.publication_id = p.id AND pc.category_id = :categoryId) ");
             params.addValue("categoryId", req.getCategoryId());
         }

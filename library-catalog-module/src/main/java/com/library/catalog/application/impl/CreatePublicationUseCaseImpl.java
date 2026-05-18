@@ -1,6 +1,7 @@
 package com.library.catalog.application.impl;
 
 import com.library.catalog.application.CreatePublicationUseCase;
+import com.library.catalog.domain.valueobject.ISBN;
 import com.library.catalog.dto.request.publication.CreatePublicationRequest;
 import com.library.catalog.infrastructure.persistence.entity.PublicationEntity;
 import com.library.catalog.infrastructure.persistence.repository.PublicationJpaRepository;
@@ -23,7 +24,7 @@ public class CreatePublicationUseCaseImpl implements CreatePublicationUseCase {
         // 1. Create and Save Publication Entity
         PublicationEntity entity = new PublicationEntity();
         entity.setId(TsIdGenerator.next());
-        entity.setIsbn(request.isbn());
+        entity.setIsbn(ISBN.normalizeOptional(request.isbn()));
         entity.setTitle(request.title());
         entity.setSubtitle(request.subtitle());
         entity.setDescription(request.description());

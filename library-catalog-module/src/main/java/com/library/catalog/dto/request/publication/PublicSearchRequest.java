@@ -1,5 +1,6 @@
 package com.library.catalog.dto.request.publication;
 
+import java.util.List;
 import lombok.Getter;
 import lombok.Setter;
 
@@ -8,6 +9,7 @@ import lombok.Setter;
 public class PublicSearchRequest {
     private String keyword;
     private Long categoryId;
+    private List<Long> categoryIds;
     private String language;
     private Integer yearFrom;
     private Integer yearTo;

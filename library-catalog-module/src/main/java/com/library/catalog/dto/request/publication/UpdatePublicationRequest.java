@@ -3,6 +3,7 @@ package com.library.catalog.dto.request.publication;
 import com.library.catalog.domain.enums.FacultyTarget;
 
 public record UpdatePublicationRequest(
+        String isbn,
         String title,
         String subtitle,
         String description,

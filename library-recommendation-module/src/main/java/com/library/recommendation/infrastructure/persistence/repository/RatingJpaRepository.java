@@ -19,8 +19,10 @@ public interface RatingJpaRepository extends JpaRepository<RatingEntity, Long> {
        FROM RatingEntity r
        JOIN UserEntity u ON r.userId = u.id
        WHERE r.publicationId = :publicationId
+         AND (:star IS NULL OR r.star = :star)
       """)
   Page<PublicationRatingResponse> findAllByPublicationId(@Param("publicationId") Long publicationId,
+      @Param("star") Integer star,
       Pageable pageable);
 
 

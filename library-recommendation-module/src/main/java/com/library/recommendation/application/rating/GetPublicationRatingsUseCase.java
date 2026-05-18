@@ -6,4 +6,6 @@ import com.library.shared.dto.PageResponse;
 public interface GetPublicationRatingsUseCase {
 
   PageResponse<PublicationRatingResponse> execute(Long publicationId, int page, int size);
+
+  PageResponse<PublicationRatingResponse> execute(Long publicationId, int page, int size, Integer star, String sort);
 }

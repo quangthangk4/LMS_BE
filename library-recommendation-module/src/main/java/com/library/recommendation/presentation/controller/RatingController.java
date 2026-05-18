@@ -4,14 +4,29 @@ import com.library.recommendation.application.rating.CreatePublicationRatingUseC
 import com.library.recommendation.application.rating.GetPublicationRatingSummaryUseCase;
 import com.library.recommendation.application.rating.GetPublicationRatingsUseCase;
 import com.library.recommendation.dto.request.CreatePublicationRatingRequest;
+import com.library.recommendation.dto.request.ReplyRatingRequest;
 import com.library.recommendation.dto.response.PublicationRatingResponse;
 import com.library.recommendation.dto.response.PublicationRatingSummaryResponse;
+import com.library.recommendation.dto.response.RatingReplyResponse;
+import com.library.shared.constant.RoleConstants;
 import com.library.shared.dto.ApiResponseApp;
 import com.library.shared.dto.PageResponse;
+import com.library.shared.kafka.KafkaTopics;
+import com.library.shared.kafka.event.NotificationMessage;
 import com.library.shared.util.RequiresAuthentication;
+import com.library.shared.util.RequiresRole;
 import com.library.shared.util.SecurityEvaluator;
+import com.library.shared.util.TsIdGenerator;
 import jakarta.validation.Valid;
+import java.util.ArrayList;
+import java.util.List;
+import java.util.Map;
 import lombok.RequiredArgsConstructor;
+import org.springframework.dao.DuplicateKeyException;
+import org.springframework.jdbc.core.JdbcTemplate;
+import org.springframework.jdbc.core.namedparam.MapSqlParameterSource;
+import org.springframework.jdbc.core.namedparam.NamedParameterJdbcTemplate;
+import org.springframework.kafka.core.KafkaTemplate;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
@@ -30,15 +45,24 @@ public class RatingController {
   private final CreatePublicationRatingUseCase createPublicationRatingUseCase;
   private final SecurityEvaluator securityEvaluator;
   private final GetPublicationRatingSummaryUseCase getPublicationRatingSummaryUseCase;
+  private final JdbcTemplate jdbcTemplate;
+  private final NamedParameterJdbcTemplate namedJdbcTemplate;
+  private final KafkaTemplate<String, Object> kafkaTemplate;
 
   @GetMapping("/publications/{publicationId}/ratings")
   public ApiResponseApp<PageResponse<PublicationRatingResponse>> getPublicationRatings(
       @PathVariable("publicationId") Long publicationId,
       @RequestParam(value = "page", defaultValue = "0") int page,
-      @RequestParam(value = "size", defaultValue = "10") int size) {
+      @RequestParam(value = "size", defaultValue = "10") int size,
+      @RequestParam(value = "star", required = false) Integer star,
+      @RequestParam(value = "sort", defaultValue = "newest") String sort) {
+    Long currentUserId = securityEvaluator.isAuthenticated() ? securityEvaluator.getCurrentUserId() : null;
+    PageResponse<PublicationRatingResponse> response =
+        getPublicationRatingsUseCase.execute(publicationId, page, size, star, sort);
+    enrichRatings(response.getContent(), currentUserId);
     return ApiResponseApp.success(
         "Get publication ratings successful",
-        getPublicationRatingsUseCase.execute(publicationId, page, size));
+        response);
   }
 
 
@@ -53,6 +77,101 @@ public class RatingController {
     return ApiResponseApp.success("Create rating successful");
   }
 
+  @PostMapping("/publications/{publicationId}/ratings/{ratingId}/helpful")
+  @RequiresAuthentication
+  public ApiResponseApp<Map<String, Object>> toggleHelpful(
+      @PathVariable("publicationId") Long publicationId,
+      @PathVariable("ratingId") Long ratingId) {
+    Long userId = securityEvaluator.getCurrentUserId();
+    Integer exists = jdbcTemplate.queryForObject(
+        "SELECT COUNT(*) FROM ratings WHERE id = ? AND publication_id = ?",
+        Integer.class,
+        ratingId,
+        publicationId
+    );
+    if (exists == null || exists == 0) {
+      return ApiResponseApp.success(Map.of("helpful", false, "helpfulCount", 0));
+    }
+
+    boolean helpful;
+    try {
+      jdbcTemplate.update(
+          "INSERT INTO rating_helpful_votes (id, created_at, rating_id, user_id) VALUES (?, NOW(), ?, ?)",
+          TsIdGenerator.next(),
+          ratingId,
+          userId
+      );
+      jdbcTemplate.update("UPDATE ratings SET helpful_count = helpful_count + 1 WHERE id = ?", ratingId);
+      helpful = true;
+      notifyReviewOwner(
+          ratingId,
+          publicationId,
+          userId,
+          "REVIEW_HELPFUL",
+          "SmartLibrary",
+          "Một người đọc đã đánh dấu review của bạn là hữu ích."
+      );
+    } catch (DuplicateKeyException duplicate) {
+      jdbcTemplate.update("DELETE FROM rating_helpful_votes WHERE rating_id = ? AND user_id = ?", ratingId, userId);
+      jdbcTemplate.update(
+          "UPDATE ratings SET helpful_count = GREATEST(helpful_count - 1, 0) WHERE id = ?",
+          ratingId
+      );
+      helpful = false;
+    }
+
+    Integer helpfulCount = jdbcTemplate.queryForObject(
+        "SELECT helpful_count FROM ratings WHERE id = ?",
+        Integer.class,
+        ratingId
+    );
+    return ApiResponseApp.success(Map.of("helpful", helpful, "helpfulCount", helpfulCount == null ? 0 : helpfulCount));
+  }
+
+  @PostMapping("/publications/{publicationId}/ratings/{ratingId}/replies")
+  @RequiresRole(RoleConstants.LIBRARIAN)
+  public ApiResponseApp<RatingReplyResponse> replyToRating(
+      @PathVariable("publicationId") Long publicationId,
+      @PathVariable("ratingId") Long ratingId,
+      @RequestBody @Valid ReplyRatingRequest request) {
+    Long librarianId = securityEvaluator.getCurrentUserId();
+    Integer exists = jdbcTemplate.queryForObject(
+        "SELECT COUNT(*) FROM ratings WHERE id = ? AND publication_id = ?",
+        Integer.class,
+        ratingId,
+        publicationId
+    );
+    if (exists == null || exists == 0) {
+      throw new IllegalArgumentException("Rating not found");
+    }
+    Long replyId = TsIdGenerator.next();
+    jdbcTemplate.update(
+        """
+        INSERT INTO rating_replies (id, created_at, updated_at, rating_id, librarian_id, content)
+        VALUES (?, NOW(), NOW(), ?, ?, ?)
+        """,
+        replyId,
+        ratingId,
+        librarianId,
+        request.getContent().trim()
+    );
+    notifyReviewOwner(
+        ratingId,
+        publicationId,
+        librarianId,
+        "REVIEW_REPLY",
+        "SmartLibrary",
+        "SmartLibrary đã trả lời review của bạn."
+    );
+    return ApiResponseApp.success("Reply created",
+        RatingReplyResponse.builder()
+            .replyId(replyId)
+            .content(request.getContent().trim())
+            .librarianName("SmartLibrary")
+            .createdAt(java.time.Instant.now())
+            .build());
+  }
+
   // public endpoint
   @GetMapping("/publications/{publicationId}/ratings/summary")
   public ApiResponseApp<PublicationRatingSummaryResponse> getPublicationRatingSummary(
@@ -60,5 +179,79 @@ public class RatingController {
     return ApiResponseApp.success(
         "Get publication rating summary successful",
         getPublicationRatingSummaryUseCase.execute(publicationId));
+  }
+
+  private void enrichRatings(List<PublicationRatingResponse> ratings, Long currentUserId) {
+    if (ratings == null || ratings.isEmpty()) return;
+    List<Long> ratingIds = ratings.stream().map(PublicationRatingResponse::getRatingId).toList();
+    Map<Long, List<RatingReplyResponse>> repliesByRatingId = namedJdbcTemplate.query(
+        """
+        SELECT rr.id, rr.rating_id, rr.content, rr.created_at
+        FROM rating_replies rr
+        WHERE rr.rating_id IN (:ratingIds)
+        ORDER BY rr.created_at ASC
+        """,
+        new MapSqlParameterSource("ratingIds", ratingIds),
+        rs -> {
+          Map<Long, List<RatingReplyResponse>> result = new java.util.HashMap<>();
+          while (rs.next()) {
+            Long ratingId = rs.getLong("rating_id");
+            result.computeIfAbsent(ratingId, key -> new ArrayList<>()).add(
+                RatingReplyResponse.builder()
+                    .replyId(rs.getLong("id"))
+                    .content(rs.getString("content"))
+                    .librarianName("SmartLibrary")
+                    .createdAt(rs.getTimestamp("created_at").toInstant())
+                    .build()
+            );
+          }
+          return result;
+        }
+    );
+
+    List<Long> likedIds = currentUserId == null ? List.of() : namedJdbcTemplate.queryForList(
+        """
+        SELECT rating_id
+        FROM rating_helpful_votes
+        WHERE user_id = :userId AND rating_id IN (:ratingIds)
+        """,
+        new MapSqlParameterSource()
+            .addValue("userId", currentUserId)
+            .addValue("ratingIds", ratingIds),
+        Long.class
+    );
+    ratings.forEach(rating -> {
+      rating.setReplies(repliesByRatingId.getOrDefault(rating.getRatingId(), List.of()));
+      rating.setHelpfulByCurrentUser(likedIds.contains(rating.getRatingId()));
+    });
+  }
+
+  private void notifyReviewOwner(
+      Long ratingId,
+      Long publicationId,
+      Long actorUserId,
+      String type,
+      String title,
+      String message) {
+    Long ownerUserId = jdbcTemplate.queryForObject(
+        "SELECT user_id FROM ratings WHERE id = ? AND publication_id = ?",
+        Long.class,
+        ratingId,
+        publicationId
+    );
+    if (ownerUserId == null || ownerUserId.equals(actorUserId)) {
+      return;
+    }
+    kafkaTemplate.send(
+        KafkaTopics.NOTIFICATION_SEND,
+        new NotificationMessage(
+            ownerUserId,
+            type,
+            title,
+            message,
+            "/userpage/book/" + publicationId,
+            ratingId
+        )
+    );
   }
 }

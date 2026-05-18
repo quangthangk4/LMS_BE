@@ -1,7 +1,10 @@
 package com.library.recommendation.infrastructure.ai;
 
 import com.fasterxml.jackson.annotation.JsonProperty;
+import com.fasterxml.jackson.databind.DeserializationFeature;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import com.library.shared.port.AiPublicationProcessingPort;
+import java.nio.charset.StandardCharsets;
 import java.time.Duration;
 import java.util.List;
 import lombok.extern.slf4j.Slf4j;
@@ -20,6 +23,7 @@ public class AiGatewayService implements AiPublicationProcessingPort {
     private final RestClient restClient;
     private final RestClient processingRestClient;
     private final JdbcTemplate jdbcTemplate;
+    private final ObjectMapper objectMapper;
 
     public AiGatewayService(
         @Value("${ai.gateway.base-url:http://localhost:8001}") String baseUrl,
@@ -44,6 +48,8 @@ public class AiGatewayService implements AiPublicationProcessingPort {
             .requestFactory(processingRequestFactory)
             .build();
         this.jdbcTemplate = jdbcTemplate;
+        this.objectMapper = new ObjectMapper();
+        this.objectMapper.configure(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES, false);
     }
 
     public AiRecommendationResult getRecommendations(Long userId, int limit) {
@@ -123,17 +129,32 @@ public class AiGatewayService implements AiPublicationProcessingPort {
         try {
             AiProcessPublicationRequest request =
                 new AiProcessPublicationRequest(publicationId, pdfUrl, forceReprocess);
-            AiProcessPublicationResult response = processingRestClient.post()
+            byte[] responseBody = processingRestClient.post()
                 .uri("/api/v1/publications/process")
                 .contentType(MediaType.APPLICATION_JSON)
+                .accept(MediaType.APPLICATION_JSON, MediaType.APPLICATION_OCTET_STREAM)
                 .body(request)
                 .retrieve()
-                .body(AiProcessPublicationResult.class);
+                .body(byte[].class);
+            AiProcessPublicationResult response = parseProcessPublicationResponse(responseBody);
 
             log.info("AI publication process requested: publicationId={}, response={}", publicationId, response);
         } catch (Exception e) {
             log.warn("AI publication process request failed for publicationId={}: {}", publicationId, e.getMessage());
             markAiFailed(publicationId, "Không gửi được yêu cầu xử lý sang AI Service: " + e.getMessage());
+        }
+    }
+
+    private AiProcessPublicationResult parseProcessPublicationResponse(byte[] responseBody) {
+        if (responseBody == null || responseBody.length == 0) {
+            throw new IllegalStateException("AI Service returned an empty processing response");
+        }
+        String rawBody = new String(responseBody, StandardCharsets.UTF_8);
+        try {
+            return objectMapper.readValue(rawBody, AiProcessPublicationResult.class);
+        } catch (Exception e) {
+            String snippet = rawBody.length() > 300 ? rawBody.substring(0, 300) : rawBody;
+            throw new IllegalStateException("AI Service returned a non-JSON processing response: " + snippet, e);
         }
     }
 

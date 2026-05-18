@@ -4,11 +4,17 @@ import com.fasterxml.jackson.databind.annotation.JsonSerialize;
 import com.fasterxml.jackson.databind.ser.std.ToStringSerializer;
 import com.library.user.domain.enums.FacultyEnum;
 import java.time.Instant;
+import java.util.ArrayList;
+import java.util.List;
+import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
+import lombok.NoArgsConstructor;
 
 @Data
 @Builder
+@NoArgsConstructor
+@AllArgsConstructor
 public class PublicationRatingResponse {
 
   @JsonSerialize(using = ToStringSerializer.class)
@@ -22,6 +28,25 @@ public class PublicationRatingResponse {
   private String studentId;
   private FacultyEnum faculty;
   private Instant createdAt;
+  @Builder.Default
+  private boolean helpfulByCurrentUser = false;
+  @Builder.Default
+  private List<RatingReplyResponse> replies = new ArrayList<>();
+
+  public PublicationRatingResponse(Long ratingId, int star, String comment, int helpfulCount,
+      String fullName, String profilePictureUrl, String studentId, FacultyEnum faculty, Instant createdAt) {
+    this.ratingId = ratingId;
+    this.star = star;
+    this.comment = comment;
+    this.helpfulCount = helpfulCount;
+    this.fullName = fullName;
+    this.profilePictureUrl = profilePictureUrl;
+    this.studentId = studentId;
+    this.faculty = faculty;
+    this.createdAt = createdAt;
+    this.helpfulByCurrentUser = false;
+    this.replies = new ArrayList<>();
+  }
 
   public String getFaculty() {
     return faculty != null ? faculty.getName() : null;

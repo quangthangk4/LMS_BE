@@ -2,6 +2,8 @@ package com.library.recommendation.presentation.controller;
 
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
+import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
@@ -28,6 +30,11 @@ import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 import org.springframework.http.MediaType;
+import org.springframework.jdbc.core.JdbcTemplate;
+import org.springframework.jdbc.core.ResultSetExtractor;
+import org.springframework.jdbc.core.namedparam.NamedParameterJdbcTemplate;
+import org.springframework.jdbc.core.namedparam.SqlParameterSource;
+import org.springframework.kafka.core.KafkaTemplate;
 import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.test.web.servlet.setup.MockMvcBuilders;
 import org.springframework.validation.beanvalidation.LocalValidatorFactoryBean;
@@ -43,6 +50,9 @@ class RatingControllerTest {
     @Mock CreatePublicationRatingUseCase createPublicationRatingUseCase;
     @Mock SecurityEvaluator securityEvaluator;
     @Mock GetPublicationRatingSummaryUseCase getPublicationRatingSummaryUseCase;
+    @Mock JdbcTemplate jdbcTemplate;
+    @Mock NamedParameterJdbcTemplate namedJdbcTemplate;
+    @Mock KafkaTemplate<String, Object> kafkaTemplate;
 
     @InjectMocks RatingController controller;
 
@@ -80,7 +90,10 @@ class RatingControllerTest {
             .isLast(true)
             .build();
 
-        when(getPublicationRatingsUseCase.execute(PUBLICATION_ID, 0, 10)).thenReturn(page);
+        when(securityEvaluator.isAuthenticated()).thenReturn(false);
+        when(getPublicationRatingsUseCase.execute(PUBLICATION_ID, 0, 10, null, "newest")).thenReturn(page);
+        when(namedJdbcTemplate.query(anyString(), any(SqlParameterSource.class), any(ResultSetExtractor.class)))
+            .thenReturn(java.util.Map.of());
 
         mockMvc.perform(get("/api/v1/publications/{publicationId}/ratings", PUBLICATION_ID))
             .andExpect(status().isOk())

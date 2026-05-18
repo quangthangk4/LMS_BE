@@ -122,6 +122,12 @@ google:
   books:
     api-key: ${GOOGLE_BOOKS_API_KEY:}
 
+payos:
+  base-url: ${PAYOS_BASE_URL:}
+  client-id: ${CLIENT_ID_PAYOS:}
+  api-key: ${API_KEY_PAYOS:}
+  checksum-key: ${CHECKSUM_KEY_PAYOS:}
+
 #logging:
 #  level:
 #    root: INFO

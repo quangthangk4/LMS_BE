@@ -15,6 +15,7 @@ docker-compose.yml
 note.md
 .env
 *.sql
+!library-bootstrap/src/main/resources/db/migration/*.sql
 backup-library.sql
 .claude/
 

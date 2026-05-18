@@ -12,5 +12,7 @@ public enum NotificationType {
     RETURN_REMINDER,
     PICKUP_CONFIRMED,
     RETURN_CONFIRMED,
-    FINE_PAID
+    FINE_PAID,
+    REVIEW_HELPFUL,
+    REVIEW_REPLY
 }

@@ -36,6 +36,13 @@ public class ISBN {
         return new ISBN(value);
     }
 
+    public static String normalizeOptional(String value) {
+        if (value == null || value.isBlank()) {
+            return null;
+        }
+        return ISBN.of(value).getValue();
+    }
+
     /**
      * Validates if the ISBN format is correct (ISBN-10 or ISBN-13).
      */

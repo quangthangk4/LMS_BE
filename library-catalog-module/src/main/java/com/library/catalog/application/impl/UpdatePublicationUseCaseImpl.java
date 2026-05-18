@@ -1,6 +1,7 @@
 package com.library.catalog.application.impl;
 
 import com.library.catalog.application.UpdatePublicationUseCase;
+import com.library.catalog.domain.valueobject.ISBN;
 import com.library.catalog.dto.request.publication.UpdatePublicationRequest;
 import com.library.catalog.infrastructure.persistence.entity.PublicationEntity;
 import com.library.catalog.infrastructure.persistence.repository.PublicationJpaRepository;
@@ -24,6 +25,7 @@ public class UpdatePublicationUseCaseImpl implements UpdatePublicationUseCase {
                 .orElseThrow(() -> new IllegalArgumentException("Publication not found: " + publicationId));
 
         // 1. Update Publication Entity
+        entity.setIsbn(ISBN.normalizeOptional(request.isbn()));
         entity.setTitle(request.title());
         entity.setSubtitle(request.subtitle());
         entity.setDescription(request.description());
