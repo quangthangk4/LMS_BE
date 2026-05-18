@@ -82,7 +82,7 @@ spring:
         registration:
           google:
             client-id: ${GOOGLE_CLIENT_ID:937096248326-ufp0dhmi6695c2selghgk86gjmk351rd.apps.googleusercontent.com}
-            client-secret: ${GOOGLE_CLIENT_SECRET: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}
+            client-secret: ${GOOGLE_CLIENT_SECRET}
             authorization-grant-type: authorization_code
             scope: profile, email,openid
             redirect-uri: ${OAUTH2_REDIRECT_URI:http://localhost:3000/oauth2/callback}
@@ -114,6 +114,9 @@ ai:
     connect-timeout-ms: ${AI_GATEWAY_CONNECT_TIMEOUT_MS:1000}
     read-timeout-ms: ${AI_GATEWAY_READ_TIMEOUT_MS:5000}
     processing-read-timeout-ms: ${AI_GATEWAY_PROCESSING_READ_TIMEOUT_MS:180000}
+  callback:
+    secret: ${AI_CALLBACK_SECRET:}
+    max-clock-skew-seconds: ${AI_CALLBACK_MAX_CLOCK_SKEW_SECONDS:300}
 
 google:
   books:

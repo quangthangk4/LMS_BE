@@ -1,6 +1,7 @@
 package com.library.recommendation.presentation.controller;
 
 import com.library.recommendation.application.wishlist.AddToWishlistUseCase;
+import com.library.recommendation.application.wishlist.ClearWishlistUseCase;
 import com.library.recommendation.application.wishlist.GetWishlistStatusUseCase;
 import com.library.recommendation.application.wishlist.GetWishlistUseCase;
 import com.library.recommendation.application.wishlist.RemoveFromWishlistUseCase;
@@ -25,6 +26,7 @@ public class WishlistController {
     private final SecurityEvaluator security;
     private final AddToWishlistUseCase addToWishlistUseCase;
     private final RemoveFromWishlistUseCase removeFromWishlistUseCase;
+    private final ClearWishlistUseCase clearWishlistUseCase;
     private final GetWishlistUseCase getWishlistUseCase;
     private final GetWishlistStatusUseCase getWishlistStatusUseCase;
 
@@ -48,6 +50,13 @@ public class WishlistController {
         @PathVariable("publicationId") Long publicationId) {
         removeFromWishlistUseCase.execute(security.getCurrentUserId(), publicationId);
         return ApiResponseApp.deleteSuccess("Removed from wishlist");
+    }
+
+    @DeleteMapping
+    @RequiresAuthentication
+    public ApiResponseApp<Void> clearWishlist() {
+        clearWishlistUseCase.execute(security.getCurrentUserId());
+        return ApiResponseApp.deleteSuccess("Cleared wishlist");
     }
 
     @GetMapping("/{publicationId}/status")
