@@ -129,13 +129,22 @@ public class AiGatewayService implements AiPublicationProcessingPort {
         try {
             AiProcessPublicationRequest request =
                 new AiProcessPublicationRequest(publicationId, pdfUrl, forceReprocess);
-            byte[] responseBody = processingRestClient.post()
+            String responseBody = processingRestClient.post()
                 .uri("/api/v1/publications/process")
                 .contentType(MediaType.APPLICATION_JSON)
                 .accept(MediaType.APPLICATION_JSON, MediaType.APPLICATION_OCTET_STREAM)
                 .body(request)
-                .retrieve()
-                .body(byte[].class);
+                .exchange((httpRequest, httpResponse) -> {
+                    byte[] rawBody = httpResponse.getBody().readAllBytes();
+                    String rawText = new String(rawBody, StandardCharsets.UTF_8);
+                    if (httpResponse.getStatusCode().isError()) {
+                        throw new IllegalStateException(
+                            "AI Service returned HTTP " + httpResponse.getStatusCode().value() + ": "
+                                + summarizeRawBody(rawText)
+                        );
+                    }
+                    return rawText;
+                });
             AiProcessPublicationResult response = parseProcessPublicationResponse(responseBody);
 
             log.info("AI publication process requested: publicationId={}, response={}", publicationId, response);
@@ -145,21 +154,38 @@ public class AiGatewayService implements AiPublicationProcessingPort {
         }
     }
 
-    private AiProcessPublicationResult parseProcessPublicationResponse(byte[] responseBody) {
-        if (responseBody == null || responseBody.length == 0) {
+    private AiProcessPublicationResult parseProcessPublicationResponse(String responseBody) {
+        if (responseBody == null || responseBody.isBlank()) {
             throw new IllegalStateException("AI Service returned an empty processing response");
         }
-        String rawBody = new String(responseBody, StandardCharsets.UTF_8);
+        String rawBody = responseBody.strip();
         try {
             return objectMapper.readValue(rawBody, AiProcessPublicationResult.class);
         } catch (Exception e) {
-            String snippet = rawBody.length() > 300 ? rawBody.substring(0, 300) : rawBody;
-            throw new IllegalStateException("AI Service returned a non-JSON processing response: " + snippet, e);
+            throw new IllegalStateException(
+                "AI Service returned a non-JSON processing response: " + summarizeRawBody(rawBody),
+                e
+            );
         }
+    }
+
+    private static String summarizeRawBody(String rawBody) {
+        if (rawBody == null || rawBody.isBlank()) {
+            return "<empty>";
+        }
+        String normalized = rawBody.strip().replaceAll("\\s+", " ");
+        return normalized.length() > 300 ? normalized.substring(0, 300) : normalized;
     }
 
     private void markAiFailed(Long publicationId, String errorMessage) {
         try {
+            if (hasSuccessfulAiOutput(publicationId)) {
+                log.info(
+                    "Skip marking AI processing as failed because successful output already exists: publicationId={}",
+                    publicationId
+                );
+                return;
+            }
             jdbcTemplate.update(
                 """
                 INSERT INTO ai_engine.publication_etl_runs (
@@ -183,6 +209,33 @@ public class AiGatewayService implements AiPublicationProcessingPort {
             );
         } catch (Exception ex) {
             log.warn("Failed to persist AI processing failure for publicationId={}: {}", publicationId, ex.getMessage());
+        }
+    }
+
+    private boolean hasSuccessfulAiOutput(Long publicationId) {
+        try {
+            Boolean hasOutput = jdbcTemplate.queryForObject(
+                """
+                SELECT EXISTS (
+                    SELECT 1
+                    FROM ai_engine.publication_etl_runs
+                    WHERE publication_id = ?
+                      AND status = 'SUCCESS'
+                ) OR EXISTS (
+                    SELECT 1
+                    FROM ai_engine.publication_vectors
+                    WHERE publication_id = ?
+                    LIMIT 1
+                )
+                """,
+                Boolean.class,
+                publicationId,
+                publicationId
+            );
+            return Boolean.TRUE.equals(hasOutput);
+        } catch (Exception ex) {
+            log.warn("Failed to inspect AI processing output for publicationId={}: {}", publicationId, ex.getMessage());
+            return false;
         }
     }
 

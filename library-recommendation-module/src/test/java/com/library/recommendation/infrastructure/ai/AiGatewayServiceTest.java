@@ -1,6 +1,10 @@
 package com.library.recommendation.infrastructure.ai;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.anyString;
+import static org.mockito.Mockito.never;
+import static org.mockito.Mockito.verify;
 
 import com.sun.net.httpserver.HttpExchange;
 import com.sun.net.httpserver.HttpServer;
@@ -19,6 +23,7 @@ class AiGatewayServiceTest {
 
     private HttpServer server;
     private AiGatewayService gateway;
+    private JdbcTemplate jdbcTemplate;
     private final AtomicReference<String> requestBody = new AtomicReference<>();
     private final AtomicReference<String> requestPath = new AtomicReference<>();
 
@@ -27,7 +32,8 @@ class AiGatewayServiceTest {
         server = HttpServer.create(new InetSocketAddress(0), 0);
         server.start();
         String baseUrl = "http://localhost:" + server.getAddress().getPort();
-        gateway = new AiGatewayService(baseUrl, 500, 1_000, 1_000, org.mockito.Mockito.mock(JdbcTemplate.class));
+        jdbcTemplate = org.mockito.Mockito.mock(JdbcTemplate.class);
+        gateway = new AiGatewayService(baseUrl, 500, 1_000, 1_000, jdbcTemplate);
     }
 
     @AfterEach
@@ -76,11 +82,47 @@ class AiGatewayServiceTest {
         assertThat(result.strategy()).isEqualTo("AI_GATEWAY_UNAVAILABLE");
     }
 
+    @Test
+    @DisplayName("publication processing accepts JSON body even when AI service labels it octet-stream")
+    void processPublication_shouldAcceptOctetStreamJsonResponse() {
+        server.createContext("/api/v1/publications/process", exchange ->
+            respond(
+                exchange,
+                200,
+                "application/octet-stream",
+                """
+                {
+                  "publication_id": 42,
+                  "status": "SUCCESS",
+                  "skipped": false,
+                  "chunks": 12,
+                  "vectors": 12,
+                  "summary_generated": true,
+                  "tags": ["Database"],
+                  "ai_target_audience": "Computer science students"
+                }
+                """
+            ));
+
+        gateway.processPublication(42L, "https://storage.example/book.pdf", true);
+
+        assertThat(requestPath.get()).isEqualTo("/api/v1/publications/process");
+        assertThat(requestBody.get())
+            .contains("\"publication_id\":42")
+            .contains("\"pdf_url\":\"https://storage.example/book.pdf\"")
+            .contains("\"force_reprocess\":true");
+        verify(jdbcTemplate, never()).update(anyString(), any(), any());
+    }
+
     private void respond(HttpExchange exchange, int statusCode, String response) throws IOException {
+        respond(exchange, statusCode, "application/json", response);
+    }
+
+    private void respond(HttpExchange exchange, int statusCode, String contentType, String response) throws IOException {
         requestPath.set(exchange.getRequestURI().getPath());
         requestBody.set(new String(exchange.getRequestBody().readAllBytes(), StandardCharsets.UTF_8));
         byte[] bytes = response.getBytes(StandardCharsets.UTF_8);
-        exchange.getResponseHeaders().set("Content-Type", "application/json");
+        exchange.getResponseHeaders().set("Content-Type", contentType);
         exchange.sendResponseHeaders(statusCode, bytes.length);
         exchange.getResponseBody().write(bytes);
         exchange.close();
