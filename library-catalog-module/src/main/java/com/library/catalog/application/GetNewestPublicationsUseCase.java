@@ -5,5 +5,9 @@ import java.util.List;
 
 public interface GetNewestPublicationsUseCase {
 
-  List<NewestPublicationsResponse> execute(int limit);
+  default List<NewestPublicationsResponse> execute(int limit) {
+    return execute(limit, "vi");
+  }
+
+  List<NewestPublicationsResponse> execute(int limit, String uiLanguage);
 }

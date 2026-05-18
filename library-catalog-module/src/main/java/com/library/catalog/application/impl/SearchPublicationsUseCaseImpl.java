@@ -1,6 +1,7 @@
 package com.library.catalog.application.impl;
 
 import com.library.catalog.application.SearchPublicationsUseCase;
+import com.library.catalog.application.i18n.MetadataLanguage;
 import com.library.catalog.dto.request.publication.PublicSearchRequest;
 import com.library.catalog.dto.response.publication.PublicSearchResult;
 import com.library.shared.dto.PageResponse;
@@ -19,16 +20,18 @@ public class SearchPublicationsUseCaseImpl implements SearchPublicationsUseCase 
     private static final String SELECT_CLAUSE = """
         SELECT
             p.id                                                                          AS publication_id,
-            p.title,
+            COALESCE(NULLIF(pt.title, ''), p.title)                                      AS title,
             p.cover_image_url,
             p.publication_year,
-            p.description,
+            COALESCE(NULLIF(pt.description, ''), p.description)                          AS description,
             pub.name                                                                      AS publisher_name,
             (SELECT STRING_AGG(a2.name, ', ' ORDER BY a2.name)
              FROM publication_authors pa2 JOIN authors a2 ON a2.id = pa2.author_id
              WHERE pa2.publication_id = p.id)                                             AS author_names,
-            (SELECT STRING_AGG(c2.name, ', ')
-             FROM publication_categories pc2 JOIN categories c2 ON c2.id = pc2.category_id
+            (SELECT STRING_AGG(COALESCE(NULLIF(ct2.name, ''), c2.name), ', ')
+             FROM publication_categories pc2
+             JOIN categories c2 ON c2.id = pc2.category_id
+             LEFT JOIN category_translations ct2 ON ct2.category_id = c2.id AND ct2.language_code = :uiLanguage
              WHERE pc2.publication_id = p.id)                                             AS category_names,
             (SELECT COUNT(*) FROM items i2 WHERE i2.publication_id = p.id)                AS total_items,
             (SELECT COUNT(*) FROM items i2 WHERE i2.publication_id = p.id
@@ -42,14 +45,21 @@ public class SearchPublicationsUseCaseImpl implements SearchPublicationsUseCase 
              WHERE ui.publication_id = p.id AND ui.type = 'WATCH')                        AS view_count
         FROM publications p
         LEFT JOIN publishers pub ON pub.id = p.publisher_id
+        LEFT JOIN publication_translations pt ON pt.publication_id = p.id AND pt.language_code = :uiLanguage
         """;
 
     private static final String COUNT_CLAUSE =
-        "SELECT COUNT(DISTINCT p.id) FROM publications p LEFT JOIN publishers pub ON pub.id = p.publisher_id ";
+        """
+        SELECT COUNT(DISTINCT p.id)
+        FROM publications p
+        LEFT JOIN publishers pub ON pub.id = p.publisher_id
+        LEFT JOIN publication_translations pt ON pt.publication_id = p.id AND pt.language_code = :uiLanguage
+        """;
 
     @Override
-    public PageResponse<PublicSearchResult> execute(PublicSearchRequest req) {
+    public PageResponse<PublicSearchResult> execute(PublicSearchRequest req, String uiLanguage) {
         MapSqlParameterSource params = new MapSqlParameterSource();
+        params.addValue("uiLanguage", MetadataLanguage.normalize(uiLanguage));
         String where = buildWhere(req, params);
 
         int size = Math.min(req.getSize(), 50);
@@ -99,14 +109,24 @@ public class SearchPublicationsUseCaseImpl implements SearchPublicationsUseCase 
             String kw = "%" + req.getKeyword().trim().toLowerCase() + "%";
             sb.append("""
                 AND (LOWER(p.title) LIKE :kw
-                  OR LOWER(p.subtitle) LIKE :kw
+                  OR LOWER(COALESCE(NULLIF(pt.title, ''), p.title)) LIKE :kw
+                  OR LOWER(COALESCE(NULLIF(pt.subtitle, ''), p.subtitle)) LIKE :kw
+                  OR LOWER(COALESCE(NULLIF(pt.description, ''), p.description)) LIKE :kw
                   OR p.isbn = :kwExact
                   OR EXISTS (SELECT 1 FROM publication_authors pa JOIN authors a ON a.id = pa.author_id
                              WHERE pa.publication_id = p.id AND LOWER(a.name) LIKE :kw)
-                  OR EXISTS (SELECT 1 FROM publication_tags pt JOIN tags t ON t.id = pt.tag_id
-                             WHERE pt.publication_id = p.id AND LOWER(t.name) LIKE :kw)
-                  OR EXISTS (SELECT 1 FROM publication_categories pc JOIN categories c ON c.id = pc.category_id
-                             WHERE pc.publication_id = p.id AND LOWER(c.name) LIKE :kw))
+                  OR EXISTS (SELECT 1
+                             FROM publication_tags ptag
+                             JOIN tags t ON t.id = ptag.tag_id
+                             LEFT JOIN tag_translations tt ON tt.tag_id = t.id AND tt.language_code = :uiLanguage
+                             WHERE ptag.publication_id = p.id
+                               AND LOWER(COALESCE(NULLIF(tt.name, ''), t.name)) LIKE :kw)
+                  OR EXISTS (SELECT 1
+                             FROM publication_categories pc
+                             JOIN categories c ON c.id = pc.category_id
+                             LEFT JOIN category_translations ct ON ct.category_id = c.id AND ct.language_code = :uiLanguage
+                             WHERE pc.publication_id = p.id
+                               AND LOWER(COALESCE(NULLIF(ct.name, ''), c.name)) LIKE :kw))
                 """);
             params.addValue("kw", kw).addValue("kwExact", req.getKeyword().trim());
         }
@@ -153,14 +173,14 @@ public class SearchPublicationsUseCaseImpl implements SearchPublicationsUseCase 
         if (keyword != null && !keyword.isBlank()) {
             relevancePrefix = """
                 CASE
-                    WHEN LOWER(p.title) LIKE :kw THEN 0
-                    WHEN LOWER(p.subtitle) LIKE :kw THEN 1
+                    WHEN LOWER(COALESCE(NULLIF(pt.title, ''), p.title)) LIKE :kw THEN 0
+                    WHEN LOWER(COALESCE(NULLIF(pt.subtitle, ''), p.subtitle)) LIKE :kw THEN 1
                     ELSE 2
                 END ASC,\s""";
         }
 
         String primarySort = switch (sortBy != null ? sortBy : "newest") {
-            case "title_az"      -> "p.title ASC";
+            case "title_az"      -> "COALESCE(NULLIF(pt.title, ''), p.title) ASC";
             case "most_borrowed" -> "(SELECT COUNT(*) FROM borrowing_transactions bt JOIN items bi ON bi.id = bt.item_id WHERE bi.publication_id = p.id) DESC";
             case "most_viewed"   -> "(SELECT COUNT(*) FROM user_interactions ui WHERE ui.publication_id = p.id AND ui.type = 'WATCH') DESC";
             case "rating"        -> "(SELECT COALESCE(AVG(r.star::numeric), 0) FROM ratings r WHERE r.publication_id = p.id) DESC";

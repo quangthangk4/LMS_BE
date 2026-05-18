@@ -5,5 +5,9 @@ import com.library.catalog.dto.response.publication.PublicSearchResult;
 import com.library.shared.dto.PageResponse;
 
 public interface SearchPublicationsUseCase {
-    PageResponse<PublicSearchResult> execute(PublicSearchRequest request);
+    default PageResponse<PublicSearchResult> execute(PublicSearchRequest request) {
+        return execute(request, "vi");
+    }
+
+    PageResponse<PublicSearchResult> execute(PublicSearchRequest request, String uiLanguage);
 }

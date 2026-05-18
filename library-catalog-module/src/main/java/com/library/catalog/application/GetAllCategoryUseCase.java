@@ -5,5 +5,9 @@ import com.library.catalog.dto.response.category.CategoryOverviewResponse;
 import java.util.List;
 
 public interface GetAllCategoryUseCase {
-    List<CategoryOverviewResponse> execute();
+    default List<CategoryOverviewResponse> execute() {
+        return execute("vi");
+    }
+
+    List<CategoryOverviewResponse> execute(String uiLanguage);
 }

@@ -12,5 +12,9 @@ public interface PublicationRepositoryCustom {
       String keyword, Long categoryId, Integer year, Boolean hasItems, Pageable pageable
   );
 
-  Optional<PublicationDetailResponse> findPublicationDetailForLibrarian(Long id);
+  default Optional<PublicationDetailResponse> findPublicationDetailForLibrarian(Long id) {
+    return findPublicationDetailForLibrarian(id, "vi");
+  }
+
+  Optional<PublicationDetailResponse> findPublicationDetailForLibrarian(Long id, String uiLanguage);
 }

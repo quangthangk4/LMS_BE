@@ -14,7 +14,8 @@ target/
 docker-compose.yml
 note.md
 .env
-
+*.sql
+backup-library.sql
 .claude/
 
 ### Eclipse ###

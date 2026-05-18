@@ -14,6 +14,7 @@ import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
+import org.springframework.web.bind.annotation.RequestHeader;
 import org.springframework.web.bind.annotation.RestController;
 
 import java.util.List;
@@ -39,8 +40,9 @@ public class CategoryController {
 
 
     @GetMapping
-    public ApiResponseApp<List<CategoryOverviewResponse>> getAllCategory() {
-        return ApiResponseApp.success(getAllCategoryUseCase.execute());
+    public ApiResponseApp<List<CategoryOverviewResponse>> getAllCategory(
+        @RequestHeader(name = "Accept-Language", required = false) String acceptLanguage) {
+        return ApiResponseApp.success(getAllCategoryUseCase.execute(acceptLanguage));
     }
 
     @PostMapping

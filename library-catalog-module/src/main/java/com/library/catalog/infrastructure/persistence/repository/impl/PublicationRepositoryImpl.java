@@ -1,6 +1,7 @@
 package com.library.catalog.infrastructure.persistence.repository.impl;
 
 import com.library.catalog.domain.enums.FacultyTarget;
+import com.library.catalog.application.i18n.MetadataLanguage;
 import com.library.catalog.dto.response.author.AuthorOverviewResponse;
 import com.library.catalog.dto.response.category.CategoryOverviewResponse;
 import com.library.catalog.dto.response.item.ItemOverviewResponse;
@@ -129,15 +130,23 @@ public class PublicationRepositoryImpl implements PublicationRepositoryCustom {
   }
 
   @Override
-  public Optional<PublicationDetailResponse> findPublicationDetailForLibrarian(Long id) {
+  public Optional<PublicationDetailResponse> findPublicationDetailForLibrarian(Long id, String uiLanguage) {
+    String language = MetadataLanguage.normalize(uiLanguage);
 
     // ── 1. Publication + Publisher ──────────────────────────────────────
     String pubSQL = """
         SELECT
-            p.id, p.isbn, p.title, p.subtitle, p.description, p.language,
-            p.number_of_pages, p.ai_summary, p.ai_target_audience, p.file_url,
+            p.id, p.isbn,
+            COALESCE(NULLIF(pt.title, ''), p.title) AS title,
+            COALESCE(NULLIF(pt.subtitle, ''), p.subtitle) AS subtitle,
+            COALESCE(NULLIF(pt.description, ''), p.description) AS description,
+            p.language,
+            p.number_of_pages,
+            COALESCE(NULLIF(pt.ai_summary, ''), p.ai_summary) AS ai_summary,
+            p.ai_target_audience, p.file_url,
             p.publication_year, p.edition, p.cover_image_url, p.size, p.weight,
-            p.call_number, p.table_of_contents,
+            p.call_number,
+            COALESCE(NULLIF(pt.table_of_contents, ''), p.table_of_contents) AS table_of_contents,
             (SELECT COUNT(*) FROM borrowing_transactions bt
              JOIN items bi ON bi.id = bt.item_id
              WHERE bi.publication_id = p.id) AS borrow_count,
@@ -152,11 +161,12 @@ public class PublicationRepositoryImpl implements PublicationRepositoryCustom {
             pb.name AS publisher_name
         FROM publications p
         LEFT JOIN publishers pb ON pb.id = p.publisher_id
+        LEFT JOIN publication_translations pt ON pt.publication_id = p.id AND pt.language_code = ?
         LEFT JOIN ai_engine.publication_etl_runs etl ON etl.publication_id = p.id
         WHERE p.id = ?
         """;
 
-    List<Map<String, Object>> pubRows = jdbc.queryForList(pubSQL, id);
+    List<Map<String, Object>> pubRows = jdbc.queryForList(pubSQL, language, id);
       if (pubRows.isEmpty()) {
           return Optional.empty();
       }
@@ -215,9 +225,10 @@ public class PublicationRepositoryImpl implements PublicationRepositoryCustom {
 
     // ── 3. Tags ─────────────────────────────────────────────────────────
     String tagSQL = """
-        SELECT t.id, t.name
+        SELECT t.id, COALESCE(NULLIF(tt.name, ''), t.name) AS name
         FROM tags t
         JOIN publication_tags pt ON pt.tag_id = t.id
+        LEFT JOIN tag_translations tt ON tt.tag_id = t.id AND tt.language_code = ?
         WHERE pt.publication_id = ?
         """;
 
@@ -226,13 +237,14 @@ public class PublicationRepositoryImpl implements PublicationRepositoryCustom {
             .id(rs.getLong("id"))
             .name(rs.getString("name"))
             .build(),
-        id);
+        language, id);
 
     // ── 4. Categories ───────────────────────────────────────────────────
     String categorySQL = """
-        SELECT c.id, c.name
+        SELECT c.id, COALESCE(NULLIF(ct.name, ''), c.name) AS name
         FROM categories c
         JOIN publication_categories pc ON pc.category_id = c.id
+        LEFT JOIN category_translations ct ON ct.category_id = c.id AND ct.language_code = ?
         WHERE pc.publication_id = ?
         """;
 
@@ -241,7 +253,7 @@ public class PublicationRepositoryImpl implements PublicationRepositoryCustom {
             .id(rs.getLong("id"))
             .name(rs.getString("name"))
             .build(),
-        id);
+        language, id);
 
     // ── 5. Ratings overview ─────────────────────────────────────────────
     String ratingSQL = """

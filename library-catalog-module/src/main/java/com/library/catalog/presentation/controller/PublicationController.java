@@ -52,6 +52,7 @@ import org.springframework.web.bind.annotation.PutMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
+import org.springframework.web.bind.annotation.RequestHeader;
 import org.springframework.web.bind.annotation.ResponseStatus;
 import org.springframework.web.bind.annotation.RestController;
 import org.springframework.web.multipart.MultipartFile;
@@ -144,14 +145,16 @@ public class PublicationController {
   // public endpoint
   @GetMapping("/search")
   public ApiResponseApp<PageResponse<PublicSearchResult>> searchPublications(
-      @ModelAttribute PublicSearchRequest request) {
-    return ApiResponseApp.success(searchPublicationsUseCase.execute(request));
+      @ModelAttribute PublicSearchRequest request,
+      @RequestHeader(name = "Accept-Language", required = false) String acceptLanguage) {
+    return ApiResponseApp.success(searchPublicationsUseCase.execute(request, acceptLanguage));
   }
 
   @GetMapping("/{id}")
   public ApiResponseApp<PublicationDetailResponse> getPublicationById(
-      @PathVariable("id") Long id) {
-    return ApiResponseApp.success(getPublicationByIdByUseCase.execute(id));
+      @PathVariable("id") Long id,
+      @RequestHeader(name = "Accept-Language", required = false) String acceptLanguage) {
+    return ApiResponseApp.success(getPublicationByIdByUseCase.execute(id, acceptLanguage));
   }
 
   @PostMapping("/{id}/view")
@@ -187,20 +190,22 @@ public class PublicationController {
   // public endpoint
   @GetMapping("/newest")
   public ApiResponseApp<List<NewestPublicationsResponse>> getNewestPublications(
-      @RequestParam(name = "limit", defaultValue = "10") int limit
+      @RequestParam(name = "limit", defaultValue = "10") int limit,
+      @RequestHeader(name = "Accept-Language", required = false) String acceptLanguage
   ) {
     return ApiResponseApp.success("get newest publications success",
-        getNewestPublicationsUseCase.execute(limit));
+        getNewestPublicationsUseCase.execute(limit, acceptLanguage));
   }
 
 
   // public endpoint
   @GetMapping("/most-borrowed")
   public ApiResponseApp<List<MostBorrowedPublicationsResponse>> getMostBorrowedPublications(
-      @RequestParam(name = "limit", defaultValue = "10") int limit
+      @RequestParam(name = "limit", defaultValue = "10") int limit,
+      @RequestHeader(name = "Accept-Language", required = false) String acceptLanguage
   ) {
     return ApiResponseApp.success("get most borrowed publications success",
-        getMostBorrowedPublicationsUseCase.execute(limit));
+        getMostBorrowedPublicationsUseCase.execute(limit, acceptLanguage));
   }
 
   // public endpoint

@@ -5,5 +5,9 @@ import java.util.List;
 
 public interface GetMostBorrowedPublicationsUseCase {
 
-  List<MostBorrowedPublicationsResponse> execute(int limit);
+  default List<MostBorrowedPublicationsResponse> execute(int limit) {
+    return execute(limit, "vi");
+  }
+
+  List<MostBorrowedPublicationsResponse> execute(int limit, String uiLanguage);
 }
