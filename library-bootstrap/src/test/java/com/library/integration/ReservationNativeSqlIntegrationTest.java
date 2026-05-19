@@ -71,6 +71,17 @@ class ReservationNativeSqlIntegrationTest {
     @BeforeEach
     void cleanState() {
         jdbc.update("""
+            DELETE FROM fines
+            WHERE transaction_id IN (
+                SELECT id FROM borrowing_transactions WHERE user_id = ?
+            )
+            """, USER_ID);
+        jdbc.update("""
+            DELETE FROM borrowing_transactions
+            WHERE user_id = ?
+              AND id > 1000
+            """, USER_ID);
+        jdbc.update("""
             DELETE FROM reservations
             WHERE user_id = ?
               AND publication_id = ?

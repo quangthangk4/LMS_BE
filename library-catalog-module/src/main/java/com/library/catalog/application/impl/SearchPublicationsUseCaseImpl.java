@@ -112,23 +112,33 @@ public class SearchPublicationsUseCaseImpl implements SearchPublicationsUseCase 
                   OR LOWER(COALESCE(NULLIF(pt.title, ''), p.title)) LIKE :kw
                   OR LOWER(COALESCE(NULLIF(pt.subtitle, ''), p.subtitle)) LIKE :kw
                   OR LOWER(COALESCE(NULLIF(pt.description, ''), p.description)) LIKE :kw
+                  OR EXISTS (SELECT 1
+                             FROM publication_translations pt_all
+                             WHERE pt_all.publication_id = p.id
+                               AND (LOWER(COALESCE(pt_all.title, '')) LIKE :kw
+                                 OR LOWER(COALESCE(pt_all.subtitle, '')) LIKE :kw
+                                 OR LOWER(COALESCE(pt_all.description, '')) LIKE :kw
+                                 OR LOWER(COALESCE(pt_all.ai_summary, '')) LIKE :kw))
                   OR p.isbn = :kwExact
                   OR EXISTS (SELECT 1 FROM publication_authors pa JOIN authors a ON a.id = pa.author_id
                              WHERE pa.publication_id = p.id AND LOWER(a.name) LIKE :kw)
                   OR EXISTS (SELECT 1
                              FROM publication_tags ptag
                              JOIN tags t ON t.id = ptag.tag_id
-                             LEFT JOIN tag_translations tt ON tt.tag_id = t.id AND tt.language_code = :uiLanguage
+                             LEFT JOIN tag_translations tt_all ON tt_all.tag_id = t.id
                              WHERE ptag.publication_id = p.id
-                               AND LOWER(COALESCE(NULLIF(tt.name, ''), t.name)) LIKE :kw)
+                               AND (LOWER(t.name) LIKE :kw
+                                 OR LOWER(COALESCE(tt_all.name, '')) LIKE :kw))
                   OR EXISTS (SELECT 1
                              FROM publication_categories pc
                              JOIN categories c ON c.id = pc.category_id
-                             LEFT JOIN category_translations ct ON ct.category_id = c.id AND ct.language_code = :uiLanguage
+                             LEFT JOIN category_translations ct_all ON ct_all.category_id = c.id
                              WHERE pc.publication_id = p.id
-                               AND LOWER(COALESCE(NULLIF(ct.name, ''), c.name)) LIKE :kw))
+                               AND (LOWER(c.name) LIKE :kw
+                                 OR LOWER(COALESCE(ct_all.name, '')) LIKE :kw)))
                 """);
             params.addValue("kw", kw).addValue("kwExact", req.getKeyword().trim());
+            params.addValue("kwExactLower", req.getKeyword().trim().toLowerCase());
         }
 
         if (req.getCategoryIds() != null && !req.getCategoryIds().isEmpty()) {
@@ -178,7 +188,32 @@ public class SearchPublicationsUseCaseImpl implements SearchPublicationsUseCase 
                 CASE
                     WHEN LOWER(COALESCE(NULLIF(pt.title, ''), p.title)) LIKE :kw THEN 0
                     WHEN LOWER(COALESCE(NULLIF(pt.subtitle, ''), p.subtitle)) LIKE :kw THEN 1
-                    ELSE 2
+                    WHEN EXISTS (
+                        SELECT 1
+                        FROM publication_translations pt_all
+                        WHERE pt_all.publication_id = p.id
+                          AND (LOWER(COALESCE(pt_all.title, '')) LIKE :kw
+                            OR LOWER(COALESCE(pt_all.subtitle, '')) LIKE :kw)
+                    ) THEN 1
+                    WHEN EXISTS (
+                        SELECT 1
+                        FROM publication_tags ptag
+                        JOIN tags t ON t.id = ptag.tag_id
+                        LEFT JOIN tag_translations tt_all ON tt_all.tag_id = t.id
+                        WHERE ptag.publication_id = p.id
+                          AND (LOWER(t.name) = :kwExactLower
+                            OR LOWER(COALESCE(tt_all.name, '')) = :kwExactLower)
+                    ) THEN 2
+                    WHEN EXISTS (
+                        SELECT 1
+                        FROM publication_tags ptag
+                        JOIN tags t ON t.id = ptag.tag_id
+                        LEFT JOIN tag_translations tt_all ON tt_all.tag_id = t.id
+                        WHERE ptag.publication_id = p.id
+                          AND (LOWER(t.name) LIKE :kw
+                            OR LOWER(COALESCE(tt_all.name, '')) LIKE :kw)
+                    ) THEN 3
+                    ELSE 4
                 END ASC,\s""";
         }
 

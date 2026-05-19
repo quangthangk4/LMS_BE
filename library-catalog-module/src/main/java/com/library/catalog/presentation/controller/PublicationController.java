@@ -113,7 +113,8 @@ public class PublicationController {
   public ApiResponseApp<String> saveDocumentUrl(
       @PathVariable("id") Long id,
       @RequestBody @Valid SaveDocumentUrlRequest request) {
-    return ApiResponseApp.success(saveDocumentUrlUseCase.execute(id, request.s3Key()));
+    return ApiResponseApp.success("Document URL saved successfully",
+        saveDocumentUrlUseCase.execute(id, request.s3Key()));
   }
 
 

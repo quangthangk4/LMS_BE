@@ -6,9 +6,14 @@ spring:
     username: test
     password: test
 
+  jpa:
+    show-sql: false
+
   # Disable Kafka auto-connect
   kafka:
     bootstrap-servers: localhost:9999
+    listener:
+      auto-startup: false
     consumer:
       auto-offset-reset: earliest
     admin:
@@ -37,6 +42,14 @@ spring:
 # Tắt schedulers
 scheduling:
   enabled: false
+
+logging:
+  level:
+    root: INFO
+    org.apache.kafka: ERROR
+    org.hibernate.SQL: WARN
+    org.springframework.jdbc.core: WARN
+    org.springframework.web: WARN
 
 # AWS S3 — dùng giá trị dummy để không kết nối thật
 aws:
