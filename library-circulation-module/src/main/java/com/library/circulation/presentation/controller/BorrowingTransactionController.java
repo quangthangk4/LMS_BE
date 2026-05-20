@@ -28,7 +28,6 @@ import com.library.shared.dto.ApiResponseApp;
 import com.library.shared.dto.PageResponse;
 import com.library.shared.util.RequiresAuthentication;
 import com.library.shared.util.RequiresRole;
-import com.library.shared.util.SecurityEvaluator;
 import io.swagger.v3.oas.annotations.Operation;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
@@ -60,7 +59,7 @@ public class BorrowingTransactionController {
   private final LookupActiveTransactionUseCase lookupActiveTransactionUseCase;
   private final ReturnBookUseCase returnBookUseCase;
   private final ReportIssueUseCase reportIssueUseCase;
-  private final SecurityEvaluator security;
+  private final com.library.shared.util.SecurityEvaluator security;
 
   @RequiresRole(RoleConstants.LIBRARIAN)
   @GetMapping

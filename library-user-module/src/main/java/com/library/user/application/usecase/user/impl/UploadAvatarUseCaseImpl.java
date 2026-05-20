@@ -8,7 +8,6 @@ import com.library.user.application.usecase.user.UploadAvatarUseCase;
 import com.library.user.domain.entities.User;
 import com.library.user.domain.repository.UserRepository;
 import com.library.user.domain.valueobject.UserId;
-import com.library.shared.port.StoragePort;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
@@ -21,7 +20,7 @@ import org.springframework.web.multipart.MultipartFile;
 public class UploadAvatarUseCaseImpl implements UploadAvatarUseCase {
 
     private final UserRepository userRepository;
-    private final StoragePort storagePort;
+    private final com.library.shared.port.StoragePort storagePort;
     private final UserMapper userMapper;
 
     @Override

@@ -20,7 +20,7 @@ public class CreatePublicationUseCaseImpl implements CreatePublicationUseCase {
 
     @Override
     @Transactional
-    public Long execute(CreatePublicationRequest request) {
+    public Long execute(CreatePublicationRequest request, Long librarianId) {
         // 1. Create and Save Publication Entity
         PublicationEntity entity = new PublicationEntity();
         entity.setId(TsIdGenerator.next());
@@ -40,6 +40,8 @@ public class CreatePublicationUseCaseImpl implements CreatePublicationUseCase {
         entity.setCallNumber(request.callNumber());
         entity.setTableOfContents(request.tableOfContents() != null ? request.tableOfContents().toString() : null);
         entity.setPublisherId(request.publisherId());
+        entity.setCreatedByLibrarianId(librarianId);
+        entity.setUpdatedByLibrarianId(librarianId);
 
         publicationJpaRepository.saveAndFlush(entity);
 

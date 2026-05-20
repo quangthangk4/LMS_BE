@@ -12,7 +12,6 @@ package "User Module" {
         - profile: UserProfile
         - roles: Set<Role>
         - status: UserStatus
-        - aiPersonalizationEnabled: boolean
         - lastLoginAt: LocalDateTime
         - domainEvents: List<Object>
         ====

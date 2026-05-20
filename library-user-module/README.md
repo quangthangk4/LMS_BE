@@ -197,7 +197,6 @@ CREATE TABLE users (
     account_status VARCHAR(20) NOT NULL DEFAULT 'ACTIVE',
     last_login_at TIMESTAMP,
     profile_picture_url VARCHAR(255),
-    ai_personalization_enabled BOOLEAN NOT NULL DEFAULT TRUE,
     created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
     updated_at TIMESTAMP
 );

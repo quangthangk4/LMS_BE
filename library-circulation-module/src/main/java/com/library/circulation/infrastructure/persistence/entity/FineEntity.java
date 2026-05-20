@@ -2,7 +2,6 @@ package com.library.circulation.infrastructure.persistence.entity;
 
 import com.library.circulation.domain.enums.PaymentStatus;
 import com.library.shared.entity.BaseEntity;
-import com.library.user.domain.enums.ViolationType;
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
 import jakarta.persistence.EnumType;
@@ -45,8 +44,10 @@ public class FineEntity extends BaseEntity {
 
   private Instant paidDate;
 
+  private Long paidByLibrarianId;
+
   @Enumerated(EnumType.STRING)
   @Column(length = 30)
-  private ViolationType type;
+  private com.library.user.domain.enums.ViolationType type;
 
 }

@@ -25,11 +25,61 @@ public class TransactionListResponse {
     private String fineTypes;
     private Instant createdAt;
     private Instant borrowedDate;
+    private String issueLibrarianName;
+    private String issueLibrarianCode;
     private LocalDate dueDate;
     private Instant returnedDate;
+    private String returnLibrarianName;
+    private String returnLibrarianCode;
+    private String finePaidByLibrarianName;
+    private String finePaidByLibrarianCode;
     private TransactionStatus status;
     private Boolean important;
     private String note;
+
+    public TransactionListResponse(
+        Long transactionId,
+        Long userId,
+        String fullName,
+        String studentId,
+        BigDecimal fineAmount,
+        PaymentStatus finePaymentStatus,
+        String fineTypes,
+        Instant createdAt,
+        Instant borrowedDate,
+        String issueLibrarianName,
+        String issueLibrarianCode,
+        LocalDate dueDate,
+        Instant returnedDate,
+        String returnLibrarianName,
+        String returnLibrarianCode,
+        String finePaidByLibrarianName,
+        String finePaidByLibrarianCode,
+        TransactionStatus status,
+        Boolean important,
+        String note
+    ) {
+        this.transactionId = transactionId;
+        this.userId = userId;
+        this.fullName = fullName;
+        this.studentId = studentId;
+        this.fineAmount = fineAmount;
+        this.finePaymentStatus = finePaymentStatus;
+        this.fineTypes = fineTypes;
+        this.createdAt = createdAt;
+        this.borrowedDate = borrowedDate;
+        this.issueLibrarianName = issueLibrarianName;
+        this.issueLibrarianCode = issueLibrarianCode;
+        this.dueDate = dueDate;
+        this.returnedDate = returnedDate;
+        this.returnLibrarianName = returnLibrarianName;
+        this.returnLibrarianCode = returnLibrarianCode;
+        this.finePaidByLibrarianName = finePaidByLibrarianName;
+        this.finePaidByLibrarianCode = finePaidByLibrarianCode;
+        this.status = status;
+        this.important = important;
+        this.note = note;
+    }
 
     public TransactionListResponse(
         Long transactionId,

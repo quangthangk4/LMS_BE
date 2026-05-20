@@ -1,7 +1,6 @@
 package com.library.circulation.application.reservation.impl;
 
-import com.library.shared.port.ItemSnapshot;
-import com.library.shared.port.ItemStatusPort;
+import com.library.circulation.application.policy.CirculationPolicyService;
 import com.library.circulation.application.reservation.ConfirmReservationPickupUseCase;
 import com.library.circulation.domain.enums.ReservationStatus;
 import com.library.circulation.domain.enums.TransactionStatus;
@@ -30,14 +29,14 @@ import org.springframework.transaction.annotation.Transactional;
 @RequiredArgsConstructor
 public class ConfirmReservationPickupUseCaseImpl implements ConfirmReservationPickupUseCase {
 
-    private static final int BORROW_DURATION_DAYS = 14;
     private static final ZoneId ZONE = ZoneId.of("Asia/Ho_Chi_Minh");
     private static final DateTimeFormatter DUE_DATE_FMT = DateTimeFormatter.ofPattern("dd/MM/yyyy");
 
     private final ReservationJpaRepository reservationJpaRepository;
     private final BorrowingTransactionJpaRepository transactionJpaRepository;
-    private final ItemStatusPort itemStatusPort;
+    private final com.library.shared.port.ItemStatusPort itemStatusPort;
     private final KafkaTemplate<String, Object> kafkaTemplate;
+    private final CirculationPolicyService policyService;
 
     @Override
     @Transactional
@@ -56,7 +55,7 @@ public class ConfirmReservationPickupUseCaseImpl implements ConfirmReservationPi
         }
 
         // 3. Lock and Get Item details
-        ItemSnapshot item = itemStatusPort.lockAndGet(reservation.getAssignedItemId());
+        com.library.shared.port.ItemSnapshot item = itemStatusPort.lockAndGet(reservation.getAssignedItemId());
         
         // 4. Update Reservation to COMPLETED
         reservation.setStatus(ReservationStatus.COMPLETED);
@@ -64,7 +63,7 @@ public class ConfirmReservationPickupUseCaseImpl implements ConfirmReservationPi
         reservationJpaRepository.save(reservation);
 
         // 5. Create BorrowingTransaction
-        LocalDate dueDate = LocalDate.now(ZONE).plusDays(BORROW_DURATION_DAYS);
+        LocalDate dueDate = LocalDate.now(ZONE).plusDays(policyService.getPolicy().defaultLoanDays());
         
         BorrowingTransactionEntity transaction = BorrowingTransactionEntity.builder()
             .userId(reservation.getUserId())

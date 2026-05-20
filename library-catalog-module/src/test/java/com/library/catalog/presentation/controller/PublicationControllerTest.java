@@ -108,7 +108,7 @@ class PublicationControllerTest {
             "QA76.76",
             null
         );
-        when(createPublicationUseCase.execute(any(CreatePublicationRequest.class))).thenReturn(42L);
+        when(createPublicationUseCase.execute(any(CreatePublicationRequest.class), any())).thenReturn(42L);
 
         mockMvc.perform(post("/api/v1/publications")
                 .contentType(MediaType.APPLICATION_JSON)
@@ -118,7 +118,7 @@ class PublicationControllerTest {
             .andExpect(jsonPath("$.message").value("Created successfully"))
             .andExpect(jsonPath("$.data").value("42"));
 
-        verify(createPublicationUseCase).execute(any(CreatePublicationRequest.class));
+        verify(createPublicationUseCase).execute(any(CreatePublicationRequest.class), any());
     }
 
     @Test

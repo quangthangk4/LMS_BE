@@ -1,12 +1,7 @@
 package com.library.auth.application.impl;
 
 import com.library.auth.application.AuthService;
-import com.library.auth.application.IntrospectToken;
 import com.library.auth.application.RefreshAccessTokenUseCase;
-import com.library.auth.application.RefreshTokensService;
-import com.library.auth.application.enums.PurposeToken;
-import com.library.auth.dto.response.TokenResponse;
-import com.library.auth.properties.RSAKeyRecord;
 import com.library.shared.exception.AppException;
 import com.library.shared.exception.ErrorCode;
 import com.library.shared.util.StaticVariable;
@@ -24,17 +19,17 @@ import java.util.Date;
 @Slf4j
 @RequiredArgsConstructor
 public class RefreshAccessTokenUseCaseImpl implements RefreshAccessTokenUseCase {
-    private final IntrospectToken introspectToken;
-    private final RSAKeyRecord rSAKeyRecord;
+    private final com.library.auth.application.IntrospectToken introspectToken;
+    private final com.library.auth.properties.RSAKeyRecord rSAKeyRecord;
     private final AuthService authService;
-    private final RefreshTokensService refreshTokensService;
+    private final com.library.auth.application.RefreshTokensService refreshTokensService;
 
     @Override
-    public TokenResponse execute(String refreshToken) {
+    public com.library.auth.dto.response.TokenResponse execute(String refreshToken) {
         log.info("begin refresh Token");
 
         JWTClaimsSet claimsSet = introspectToken.parseAndVerifyToken(refreshToken, rSAKeyRecord.rsaPublicKey());
-        if (claimsSet == null || !PurposeToken.REFRESH.name().equals(claimsSet.getClaim(StaticVariable.PURPOSE))) {
+        if (claimsSet == null || !com.library.auth.application.enums.PurposeToken.REFRESH.name().equals(claimsSet.getClaim(StaticVariable.PURPOSE))) {
             throw new AppException(ErrorCode.TOKEN_INVALID);
         }
 
@@ -47,9 +42,9 @@ public class RefreshAccessTokenUseCaseImpl implements RefreshAccessTokenUseCase 
         refreshTokensService.isRefreshTokenValid(claimsSet.getJWTID());
 
         // generate a new access token
-        String accessToken = authService.generateToken(user, PurposeToken.ACCESS);
+        String accessToken = authService.generateToken(user, com.library.auth.application.enums.PurposeToken.ACCESS);
 
-        return TokenResponse.builder()
+        return com.library.auth.dto.response.TokenResponse.builder()
                 .accessToken(accessToken)
                 .refreshToken(refreshToken)
                 .build();

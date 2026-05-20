@@ -10,7 +10,6 @@ import com.library.shared.dto.ApiResponseApp;
 import com.library.shared.dto.PageResponse;
 import com.library.shared.util.RequiresAuthentication;
 import com.library.shared.util.RequiresRole;
-import com.library.shared.util.SecurityEvaluator;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.data.domain.Page;
@@ -37,7 +36,7 @@ public class ReservationController {
   private final GetMyReservationsUseCase getMyReservationsUseCase;
   private final com.library.circulation.application.reservation.ConfirmReservationPickupUseCase confirmReservationPickupUseCase;
   private final com.library.circulation.application.reservation.LookupReservationForPickupUseCase lookupReservationForPickupUseCase;
-  private final SecurityEvaluator security;
+  private final com.library.shared.util.SecurityEvaluator security;
 
   @PostMapping
   @ResponseStatus(HttpStatus.CREATED)

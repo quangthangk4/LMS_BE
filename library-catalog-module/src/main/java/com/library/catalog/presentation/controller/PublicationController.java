@@ -36,7 +36,6 @@ import com.library.shared.dto.ApiResponseApp;
 import com.library.shared.dto.PageResponse;
 import com.library.shared.util.RequiresAuthentication;
 import com.library.shared.util.RequiresRole;
-import com.library.shared.util.SecurityEvaluator;
 import jakarta.validation.Valid;
 import java.util.List;
 import lombok.RequiredArgsConstructor;
@@ -68,7 +67,7 @@ public class PublicationController {
   private final GetListPublicationForLibrarianUseCase getListPublicationForLibrarianUseCase;
   private final GetPublicationByIdByUseCase getPublicationByIdByUseCase;
   private final RecordPublicationViewUseCase recordPublicationViewUseCase;
-  private final SecurityEvaluator securityEvaluator;
+  private final com.library.shared.util.SecurityEvaluator securityEvaluator;
   private final UpdatePublicationUseCase updatePublicationUseCase;
   private final CreatePublicationUseCase createPublicationUseCase;
   private final GetNewestPublicationsUseCase getNewestPublicationsUseCase;
@@ -87,7 +86,7 @@ public class PublicationController {
   public ApiResponseApp<String> createPublication(
       @RequestBody @Valid CreatePublicationRequest request) {
     log.info("Create publication with request: {}", request);
-    Long id = createPublicationUseCase.execute(request);
+    Long id = createPublicationUseCase.execute(request, securityEvaluator.getCurrentUserId());
     return ApiResponseApp.created(String.valueOf(id));
   }
 
@@ -131,7 +130,7 @@ public class PublicationController {
       @PathVariable("id") Long id,
       @RequestBody @Valid UpdatePublicationRequest request) {
     log.info("Update publication with request: {}", request);
-    updatePublicationUseCase.execute(id, request);
+    updatePublicationUseCase.execute(id, request, securityEvaluator.getCurrentUserId());
     return ApiResponseApp.success("update success");
   }
 

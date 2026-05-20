@@ -2,11 +2,8 @@ package com.library.auth.application.impl;
 
 import com.library.auth.application.ResetPasswordUseCase;
 import com.library.auth.domain.entity.PasswordResetToken;
-import com.library.auth.domain.repository.PasswordResetTokenRepository;
-import com.library.auth.dto.request.ResetPasswordRequest;
 import com.library.shared.exception.AppException;
 import com.library.shared.exception.ErrorCode;
-import com.library.user.application.port.PasswordHasher;
 import com.library.user.domain.entities.User;
 import com.library.user.domain.repository.UserRepository;
 import com.library.user.domain.valueobject.UserId;
@@ -18,13 +15,13 @@ import org.springframework.transaction.annotation.Transactional;
 @RequiredArgsConstructor
 public class ResetPasswordUseCaseImpl implements ResetPasswordUseCase {
 
-  private final PasswordResetTokenRepository passwordResetTokenRepository;
+  private final com.library.auth.domain.repository.PasswordResetTokenRepository passwordResetTokenRepository;
   private final UserRepository userRepository;
-  private final PasswordHasher passwordHasher;
+  private final com.library.user.application.port.PasswordHasher passwordHasher;
 
   @Override
   @Transactional
-  public void execute(ResetPasswordRequest request) {
+  public void execute(com.library.auth.dto.request.ResetPasswordRequest request) {
     PasswordResetToken resetToken = passwordResetTokenRepository.findByToken(request.token())
         .orElseThrow(() -> new AppException(ErrorCode.TOKEN_INVALID));
 

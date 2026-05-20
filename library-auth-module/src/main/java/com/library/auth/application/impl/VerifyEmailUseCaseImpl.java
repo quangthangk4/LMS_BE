@@ -1,9 +1,6 @@
 package com.library.auth.application.impl;
 
-import com.library.auth.application.IntrospectToken;
 import com.library.auth.application.VerifyEmailUseCase;
-import com.library.auth.application.enums.PurposeToken;
-import com.library.auth.properties.RSAKeyRecord;
 import com.library.shared.exception.AppException;
 import com.library.shared.exception.ErrorCode;
 import com.library.shared.util.StaticVariable;
@@ -19,8 +16,8 @@ import org.springframework.transaction.annotation.Transactional;
 @RequiredArgsConstructor
 public class VerifyEmailUseCaseImpl implements VerifyEmailUseCase {
 
-  private final IntrospectToken introspectToken;
-  private final RSAKeyRecord rSAKeyRecord;
+  private final com.library.auth.application.IntrospectToken introspectToken;
+  private final com.library.auth.properties.RSAKeyRecord rSAKeyRecord;
   private final UserRepository userRepository;
 
   @Override
@@ -28,7 +25,7 @@ public class VerifyEmailUseCaseImpl implements VerifyEmailUseCase {
   public void execute(String token) {
     JWTClaimsSet claimsSet = introspectToken.parseAndVerifyToken(token,
         rSAKeyRecord.rsaPublicKey());
-    if (claimsSet == null || !PurposeToken.VERIFY_EMAIL.name()
+    if (claimsSet == null || !com.library.auth.application.enums.PurposeToken.VERIFY_EMAIL.name()
         .equals(claimsSet.getClaim(StaticVariable.PURPOSE))) {
       throw new AppException(ErrorCode.VERIFY_EMAIL_FAILED);
     }

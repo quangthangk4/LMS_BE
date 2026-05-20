@@ -44,8 +44,12 @@ public class UserEntity extends BaseEntity {
     @Column(name = "profile_picture_url")
     private String profilePictureUrl;
 
-    @Column(name = "student_id", length = 7)
+    @Column(name = "student_id", length = 20)
     private String studentId;
+
+    @Column(name = "is_verified", nullable = false)
+    @Builder.Default
+    private boolean verified = false;
 
     @Enumerated(EnumType.STRING)
     @Column(nullable = false)

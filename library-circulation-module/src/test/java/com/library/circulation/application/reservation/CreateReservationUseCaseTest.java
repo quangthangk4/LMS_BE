@@ -8,6 +8,8 @@ import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
+import com.library.circulation.application.policy.CirculationPolicy;
+import com.library.circulation.application.policy.CirculationPolicyService;
 import com.library.circulation.application.reservation.impl.CreateReservationUseCaseImpl;
 import com.library.circulation.domain.enums.ReservationStatus;
 import com.library.circulation.dto.request.CreateReservationCommand;
@@ -16,7 +18,10 @@ import com.library.circulation.infrastructure.persistence.entity.ReservationEnti
 import com.library.circulation.infrastructure.persistence.repository.ReservationJpaRepository;
 import com.library.shared.exception.AppException;
 import com.library.shared.exception.ErrorCode;
+import java.math.BigDecimal;
+import java.time.Instant;
 import java.util.Map;
+import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -33,12 +38,32 @@ class CreateReservationUseCaseTest {
     @Mock private ReservationJpaRepository reservationJpaRepository;
     @Mock private NamedParameterJdbcTemplate jdbcTemplate;
     @Mock private KafkaTemplate<String, Object> kafkaTemplate;
+    @Mock private CirculationPolicyService policyService;
 
     @InjectMocks private CreateReservationUseCaseImpl useCase;
 
     private static final Long USER_ID = 1001L;
     private static final Long PUBLICATION_ID = 3001L;
     private static final String BRANCH = "Cơ sở 1 - Lý Thường Kiệt";
+
+    @BeforeEach
+    void setUp() {
+        when(policyService.getPolicy()).thenReturn(defaultPolicy());
+    }
+
+    private CirculationPolicy defaultPolicy() {
+        return new CirculationPolicy(
+            48,
+            14,
+            5,
+            2,
+            new BigDecimal("1000"),
+            true,
+            null,
+            null,
+            Instant.now()
+        );
+    }
 
     /**
      * Stub các jdbcTemplate call theo thứ tự:

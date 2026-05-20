@@ -6,7 +6,6 @@ import com.library.circulation.dto.response.FineResponse;
 import com.library.circulation.dto.response.StudentFinesResponse;
 import com.library.shared.exception.AppException;
 import com.library.shared.exception.ErrorCode;
-import com.library.user.domain.enums.ViolationType;
 import java.math.BigDecimal;
 import java.sql.Timestamp;
 import java.util.List;
@@ -72,7 +71,7 @@ public class GetStudentFinesUseCaseImpl implements GetStudentFinesUseCase {
             .transactionId(((Number) row.get("transaction_id")).longValue())
             .publicationTitle((String) row.get("publication_title"))
             .fineAmount((BigDecimal) row.get("fine_amount"))
-            .type(ViolationType.valueOf((String) row.get("type")))
+            .type(com.library.user.domain.enums.ViolationType.valueOf((String) row.get("type")))
             .status(PaymentStatus.valueOf((String) row.get("payment_status")))
             .createdAt(row.get("created_at") != null ? ((Timestamp) row.get("created_at")).toInstant() : null)
             .paidDate(row.get("paid_date") != null ? ((Timestamp) row.get("paid_date")).toInstant() : null)

@@ -4,7 +4,6 @@ import com.library.circulation.application.transaction.GetAllBorrowingTransactio
 import com.library.circulation.domain.enums.PaymentStatus;
 import com.library.circulation.domain.enums.TransactionStatus;
 import com.library.circulation.dto.response.TransactionListResponse;
-import com.library.shared.dto.PageResponse;
 import java.math.BigDecimal;
 import java.sql.Date;
 import java.sql.Timestamp;
@@ -27,7 +26,7 @@ public class GetAllBorrowingTransactionUseCaseImpl implements GetAllBorrowingTra
     private final NamedParameterJdbcTemplate jdbcTemplate;
 
     @Override
-    public PageResponse<TransactionListResponse> execute(
+    public com.library.shared.dto.PageResponse<TransactionListResponse> execute(
         int page,
         int size,
         String keyword,
@@ -55,16 +54,36 @@ public class GetAllBorrowingTransactionUseCaseImpl implements GetAllBorrowingTra
         StringBuilder baseFromWhere = new StringBuilder("""
             FROM borrowing_transactions t
             LEFT JOIN users u ON u.id = t.user_id
+            LEFT JOIN users issue_librarian ON issue_librarian.id = t.librarian_id_issue
+            LEFT JOIN users return_librarian ON return_librarian.id = t.librarian_id_return
             LEFT JOIN LATERAL (
               SELECT
                 COALESCE(SUM(fine_amount), 0) AS fine_amount,
                 COUNT(*) AS fine_count,
                 COUNT(*) FILTER (WHERE payment_status = 'UNPAID') AS unpaid_count,
-                STRING_AGG(DISTINCT type, ', ') FILTER (WHERE type IS NOT NULL) AS fine_types
+                STRING_AGG(DISTINCT type, ', ') FILTER (WHERE type IS NOT NULL) AS fine_types,
+                MAX(paid_by_librarian_id) FILTER (WHERE paid_by_librarian_id IS NOT NULL) AS paid_by_librarian_id
               FROM fines
               WHERE transaction_id = t.id
             ) fa ON TRUE
-            LEFT JOIN transaction_notes tn ON tn.transaction_id = t.id
+            LEFT JOIN users fine_librarian ON fine_librarian.id = fa.paid_by_librarian_id
+            LEFT JOIN LATERAL (
+              SELECT
+                BOOL_OR(important) AS important,
+                STRING_AGG(
+                  CONCAT(
+                    COALESCE(lu.full_name, 'Thủ thư'),
+                    CASE WHEN lu.student_id IS NULL OR lu.student_id = '' THEN '' ELSE CONCAT(' (', lu.student_id, ')') END,
+                    ': ',
+                    COALESCE(tn.note, '')
+                  ),
+                  E'\n'
+                  ORDER BY tn.created_at ASC, tn.id ASC
+                ) AS note
+              FROM transaction_notes tn
+              LEFT JOIN users lu ON lu.id = tn.librarian_id
+              WHERE tn.transaction_id = t.id
+            ) tn ON TRUE
             WHERE (:keyword = ''
                 OR LOWER(u.full_name) LIKE LOWER(CONCAT('%', :keyword, '%'))
                 OR LOWER(u.student_id) LIKE LOWER(CONCAT('%', :keyword, '%'))
@@ -106,8 +125,14 @@ public class GetAllBorrowingTransactionUseCaseImpl implements GetAllBorrowingTra
               tn.note,
               t.created_at,
               t.borrowed_date,
+              issue_librarian.full_name AS issue_librarian_name,
+              issue_librarian.student_id AS issue_librarian_code,
               t.due_date,
               t.returned_date,
+              return_librarian.full_name AS return_librarian_name,
+              return_librarian.student_id AS return_librarian_code,
+              fine_librarian.full_name AS fine_paid_by_librarian_name,
+              fine_librarian.student_id AS fine_paid_by_librarian_code,
               t.status
             """ + baseFromWhere + " ORDER BY " + resolveSort(sortBy) + " " + resolveDirection(sortDir) + " LIMIT :limit OFFSET :offset";
 
@@ -126,8 +151,14 @@ public class GetAllBorrowingTransactionUseCaseImpl implements GetAllBorrowingTra
                 .note(rs.getString("note"))
                 .createdAt(toInstant(rs.getTimestamp("created_at")))
                 .borrowedDate(toInstant(rs.getTimestamp("borrowed_date")))
+                .issueLibrarianName(rs.getString("issue_librarian_name"))
+                .issueLibrarianCode(rs.getString("issue_librarian_code"))
                 .dueDate(toLocalDate(rs.getDate("due_date")))
                 .returnedDate(toInstant(rs.getTimestamp("returned_date")))
+                .returnLibrarianName(rs.getString("return_librarian_name"))
+                .returnLibrarianCode(rs.getString("return_librarian_code"))
+                .finePaidByLibrarianName(rs.getString("fine_paid_by_librarian_name"))
+                .finePaidByLibrarianCode(rs.getString("fine_paid_by_librarian_code"))
                 .status(TransactionStatus.valueOf(rs.getString("status")))
                 .build()
         );
@@ -135,7 +166,7 @@ public class GetAllBorrowingTransactionUseCaseImpl implements GetAllBorrowingTra
         long totalElements = jdbcTemplate.queryForObject(countSql, params, Long.class);
         int totalPages = (int) Math.ceil((double) totalElements / safeSize);
 
-        return PageResponse.<TransactionListResponse>builder()
+        return com.library.shared.dto.PageResponse.<TransactionListResponse>builder()
             .content(content)
             .currentPage(safePage)
             .pageSize(safeSize)

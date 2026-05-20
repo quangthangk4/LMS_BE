@@ -1,6 +1,8 @@
 package com.library.circulation.application.reservation.impl;
 
 import com.library.catalog.domain.valueobject.PublicationId;
+import com.library.circulation.application.policy.CirculationPolicy;
+import com.library.circulation.application.policy.CirculationPolicyService;
 import com.library.circulation.application.reservation.CreateReservationUseCase;
 import com.library.circulation.domain.entities.Reservation;
 import com.library.circulation.domain.enums.ReservationStatus;
@@ -69,25 +71,29 @@ public class CreateReservationUseCaseImpl implements CreateReservationUseCase {
     private final ReservationJpaRepository reservationJpaRepository;
     private final NamedParameterJdbcTemplate jdbcTemplate;
     private final KafkaTemplate<String, Object> kafkaTemplate;
+    private final CirculationPolicyService policyService;
 
     @Override
     @Transactional
     public ReservationResponse execute(Long userId, CreateReservationCommand command) {
         Long publicationId = command.publicationId();
+        CirculationPolicy policy = policyService.getPolicy();
         String branch = command.preferredBranch() != null && !command.preferredBranch().isBlank()
             ? command.preferredBranch().trim() : "ANY";
 
         // Check for unpaid fines
-        Long unpaidFines = jdbcTemplate.queryForObject(CHECK_UNPAID_FINES_SQL,
-            Map.of("userId", userId), Long.class);
-        if (unpaidFines != null && unpaidFines > 0) {
-            throw new AppException(ErrorCode.USER_HAS_UNPAID_FINES);
+        if (Boolean.TRUE.equals(policy.blockBorrowWhenUnpaidFines())) {
+            Long unpaidFines = jdbcTemplate.queryForObject(CHECK_UNPAID_FINES_SQL,
+                Map.of("userId", userId), Long.class);
+            if (unpaidFines != null && unpaidFines > 0) {
+                throw new AppException(ErrorCode.USER_HAS_UNPAID_FINES);
+            }
         }
 
         // Check active reservations count (max 2)
         Long activeCount = jdbcTemplate.queryForObject(CHECK_ACTIVE_RESERVATIONS_COUNT_SQL,
             Map.of("userId", userId), Long.class);
-        if (activeCount != null && activeCount >= 2) {
+        if (activeCount != null && activeCount >= policy.maxActiveReservations()) {
             throw new AppException(ErrorCode.RESERVATION_LIMIT_EXCEEDED);
         }
 

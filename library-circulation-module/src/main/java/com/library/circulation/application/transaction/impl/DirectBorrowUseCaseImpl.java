@@ -1,6 +1,8 @@
 package com.library.circulation.application.transaction.impl;
 
 import com.library.catalog.domain.valueobject.ItemId;
+import com.library.circulation.application.policy.CirculationPolicy;
+import com.library.circulation.application.policy.CirculationPolicyService;
 import com.library.circulation.application.transaction.DirectBorrowUseCase;
 import com.library.circulation.domain.entities.BorrowingTransaction;
 import com.library.circulation.dto.request.DirectBorrowCommand;
@@ -11,9 +13,6 @@ import com.library.shared.exception.AppException;
 import com.library.shared.exception.ErrorCode;
 import com.library.shared.kafka.KafkaTopics;
 import com.library.shared.kafka.event.NotificationMessage;
-import com.library.shared.port.ItemSnapshot;
-import com.library.shared.port.ItemStatusPort;
-import com.library.shared.port.UserInteractionPort;
 import com.library.shared.util.TsIdGenerator;
 import com.library.user.domain.valueobject.UserId;
 import java.time.LocalDate;
@@ -33,8 +32,6 @@ import org.springframework.transaction.annotation.Transactional;
 @RequiredArgsConstructor
 public class DirectBorrowUseCaseImpl implements DirectBorrowUseCase {
 
-    private static final int MAX_BORROW_LIMIT = 5;
-    private static final int DUE_DAYS = 14;
     private static final ZoneId ZONE = ZoneId.of("Asia/Ho_Chi_Minh");
     private static final DateTimeFormatter DUE_DATE_FMT = DateTimeFormatter.ofPattern("dd/MM/yyyy");
 
@@ -54,15 +51,18 @@ public class DirectBorrowUseCaseImpl implements DirectBorrowUseCase {
         WHERE bt.user_id = :userId AND f.payment_status = 'UNPAID'
         """;
 
-    private final ItemStatusPort itemStatusPort;
+    private final com.library.shared.port.ItemStatusPort itemStatusPort;
     private final BorrowingTransactionJpaRepository transactionJpaRepository;
     private final NamedParameterJdbcTemplate jdbcTemplate;
     private final KafkaTemplate<String, Object> kafkaTemplate;
-    private final UserInteractionPort userInteractionPort;
+    private final com.library.shared.port.UserInteractionPort userInteractionPort;
+    private final CirculationPolicyService policyService;
 
     @Override
     @Transactional
     public BorrowTransactionResponse execute(Long librarianId, DirectBorrowCommand command) {
+        CirculationPolicy policy = policyService.getPolicy();
+
         // 1. Find user by studentId
         List<Map<String, Object>> users = jdbcTemplate.queryForList(
             FIND_USER_SQL, Map.of("studentId", command.studentId()));
@@ -70,7 +70,7 @@ public class DirectBorrowUseCaseImpl implements DirectBorrowUseCase {
         Long userId = ((Number) users.get(0).get("id")).longValue();
 
         // 2. Lock item by barcode
-        ItemSnapshot item = itemStatusPort.lockAndGetByBarcode(command.barcode());
+        com.library.shared.port.ItemSnapshot item = itemStatusPort.lockAndGetByBarcode(command.barcode());
 
         // 3. Cross-aggregate checks
         boolean reservedForThisUser = false;
@@ -95,14 +95,16 @@ public class DirectBorrowUseCaseImpl implements DirectBorrowUseCase {
 
         Long activeBorrows = jdbcTemplate.queryForObject(
             COUNT_ACTIVE_BORROWS_SQL, Map.of("userId", userId), Long.class);
-        if (activeBorrows != null && activeBorrows >= MAX_BORROW_LIMIT) {
+        if (activeBorrows != null && activeBorrows >= policy.maxActiveBorrows()) {
             throw new AppException(ErrorCode.USER_BORROW_LIMIT_EXCEEDED);
         }
 
-        Long unpaidFines = jdbcTemplate.queryForObject(
-            COUNT_UNPAID_FINES_SQL, Map.of("userId", userId), Long.class);
-        if (unpaidFines != null && unpaidFines > 0) {
-            throw new AppException(ErrorCode.USER_HAS_UNPAID_FINES);
+        if (Boolean.TRUE.equals(policy.blockBorrowWhenUnpaidFines())) {
+            Long unpaidFines = jdbcTemplate.queryForObject(
+                COUNT_UNPAID_FINES_SQL, Map.of("userId", userId), Long.class);
+            if (unpaidFines != null && unpaidFines > 0) {
+                throw new AppException(ErrorCode.USER_HAS_UNPAID_FINES);
+            }
         }
 
         if (!reservedForThisUser
@@ -111,7 +113,7 @@ public class DirectBorrowUseCaseImpl implements DirectBorrowUseCase {
         }
 
         // 4. Domain: create direct borrow (status = BORROWING immediately)
-        LocalDate dueDate = LocalDate.now(ZONE).plusDays(DUE_DAYS);
+        LocalDate dueDate = LocalDate.now(ZONE).plusDays(policy.defaultLoanDays());
         BorrowingTransaction transaction = BorrowingTransaction.createDirectBorrow(
             UserId.of(userId), ItemId.of(item.id()), UserId.of(librarianId), dueDate);
 
@@ -137,7 +139,7 @@ public class DirectBorrowUseCaseImpl implements DirectBorrowUseCase {
             entity.getId()
         ));
 
-        userInteractionPort.record(userId, item.publicationId(), UserInteractionPort.TYPE_BORROW);
+        userInteractionPort.record(userId, item.publicationId(), com.library.shared.port.UserInteractionPort.TYPE_BORROW);
         log.info("Direct borrow created: transactionId={}, userId={}, itemId={}, librarianId={}",
             entity.getId(), userId, item.id(), librarianId);
 

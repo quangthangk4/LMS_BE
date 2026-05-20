@@ -15,6 +15,7 @@ import com.library.shared.exception.AppException;
 import com.library.shared.exception.ErrorCode;
 import com.library.shared.kafka.KafkaTopics;
 import com.library.shared.kafka.event.NotificationMessage;
+import com.library.shared.service.AuditLogService;
 import com.library.shared.util.RequiresAuthentication;
 import com.library.shared.util.RequiresRole;
 import com.library.shared.util.SecurityEvaluator;
@@ -52,6 +53,7 @@ public class RatingController {
   private final JdbcTemplate jdbcTemplate;
   private final NamedParameterJdbcTemplate namedJdbcTemplate;
   private final KafkaTemplate<String, Object> kafkaTemplate;
+  private final AuditLogService auditLogService;
 
   @GetMapping("/publications/{publicationId}/ratings")
   public ApiResponseApp<PageResponse<PublicationRatingResponse>> getPublicationRatings(
@@ -192,19 +194,36 @@ public class RatingController {
         librarianId,
         request.getContent().trim()
     );
+    Map<String, Object> librarian = jdbcTemplate.queryForMap(
+        "SELECT full_name, profile_picture_url FROM users WHERE id = ?",
+        librarianId
+    );
+    String librarianName = (String) librarian.get("full_name");
+    String librarianAvatarUrl = (String) librarian.get("profile_picture_url");
     notifyReviewOwner(
         ratingId,
         publicationId,
         librarianId,
         "REVIEW_REPLY",
-        "SmartLibrary",
-        "SmartLibrary đã trả lời review của bạn."
+        librarianName,
+        librarianName + " đã trả lời review của bạn."
+    );
+    auditLogService.log(
+        librarianId,
+        RoleConstants.LIBRARIAN,
+        "REPLY_RATING",
+        "rating_replies",
+        replyId,
+        "Librarian replied to a publication rating",
+        Map.of("publicationId", publicationId, "ratingId", ratingId)
     );
     return ApiResponseApp.success("Reply created",
         RatingReplyResponse.builder()
             .replyId(replyId)
             .content(request.getContent().trim())
-            .librarianName("SmartLibrary")
+            .librarianName(librarianName)
+            .librarianAvatarUrl(librarianAvatarUrl)
+            .librarianRoleLabel("Thủ thư")
             .createdAt(java.time.Instant.now())
             .build());
   }
@@ -223,8 +242,11 @@ public class RatingController {
     List<Long> ratingIds = ratings.stream().map(PublicationRatingResponse::getRatingId).toList();
     Map<Long, List<RatingReplyResponse>> repliesByRatingId = namedJdbcTemplate.query(
         """
-        SELECT rr.id, rr.rating_id, rr.content, rr.created_at
+        SELECT rr.id, rr.rating_id, rr.content, rr.created_at,
+               u.full_name AS librarian_name,
+               u.profile_picture_url AS librarian_avatar_url
         FROM rating_replies rr
+        JOIN users u ON u.id = rr.librarian_id
         WHERE rr.rating_id IN (:ratingIds)
         ORDER BY rr.created_at ASC
         """,
@@ -237,7 +259,9 @@ public class RatingController {
                 RatingReplyResponse.builder()
                     .replyId(rs.getLong("id"))
                     .content(rs.getString("content"))
-                    .librarianName("SmartLibrary")
+                    .librarianName(rs.getString("librarian_name"))
+                    .librarianAvatarUrl(rs.getString("librarian_avatar_url"))
+                    .librarianRoleLabel("Thủ thư")
                     .createdAt(rs.getTimestamp("created_at").toInstant())
                     .build()
             );

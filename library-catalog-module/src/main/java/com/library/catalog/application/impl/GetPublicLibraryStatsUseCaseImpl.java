@@ -24,7 +24,8 @@ public class GetPublicLibraryStatsUseCaseImpl implements GetPublicLibraryStatsUs
              WHERE status IN ('WAITING_FOR_PICKUP', 'BORROWING', 'RETURNED', 'OVERDUE')) AS total_borrows,
           (SELECT COUNT(*) FROM categories) AS total_categories,
           (SELECT COALESCE(ROUND(AVG(rating::numeric), 1), 0) FROM system_reviews WHERE is_published = TRUE) AS average_rating,
-          (SELECT COUNT(*) FROM system_reviews WHERE is_published = TRUE) AS total_ratings
+          (SELECT COUNT(*) FROM system_reviews WHERE is_published = TRUE) AS total_ratings,
+          (SELECT COUNT(*) FROM system_reviews WHERE is_published = TRUE AND rating >= 3) AS satisfied_ratings
       """;
 
   @Override
@@ -32,11 +33,13 @@ public class GetPublicLibraryStatsUseCaseImpl implements GetPublicLibraryStatsUs
   public PublicLibraryStatsResponse execute() {
     Map<String, Object> row = jdbcTemplate.queryForMap(STATS_SQL, Map.of());
     double averageRating = toDouble(row.get("average_rating"));
-    int satisfactionPercent = averageRating <= 0
+    long totalRatings = toLong(row.get("total_ratings"));
+    long satisfiedRatings = toLong(row.get("satisfied_ratings"));
+    int satisfactionPercent = totalRatings == 0
         ? 0
-        : BigDecimal.valueOf(averageRating)
-            .divide(BigDecimal.valueOf(5), 4, RoundingMode.HALF_UP)
+        : BigDecimal.valueOf(satisfiedRatings)
             .multiply(BigDecimal.valueOf(100))
+            .divide(BigDecimal.valueOf(totalRatings), 0, RoundingMode.HALF_UP)
             .setScale(0, RoundingMode.HALF_UP)
             .intValue();
 
@@ -46,7 +49,7 @@ public class GetPublicLibraryStatsUseCaseImpl implements GetPublicLibraryStatsUs
         .totalBorrows(toLong(row.get("total_borrows")))
         .totalCategories(toLong(row.get("total_categories")))
         .averageRating(averageRating)
-        .totalRatings(toLong(row.get("total_ratings")))
+        .totalRatings(totalRatings)
         .satisfactionPercent(satisfactionPercent)
         .build();
   }

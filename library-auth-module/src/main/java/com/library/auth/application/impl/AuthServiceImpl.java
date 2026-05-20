@@ -7,13 +7,8 @@ import static com.library.shared.util.StaticVariable.REDIRECT_URI;
 
 import com.library.auth.application.AuthService;
 import com.library.auth.application.enums.AttributeLoginType;
-import com.library.auth.application.enums.PurposeToken;
-import com.library.auth.domain.entity.RefreshTokens;
-import com.library.auth.domain.repository.RefreshTokensRepository;
 import com.library.auth.domain.valueobject.UUIDToken;
 import com.library.auth.dto.response.ExchangeTokenResponse;
-import com.library.auth.dto.response.TokenResponse;
-import com.library.auth.properties.RSAKeyRecord;
 import com.library.shared.exception.AppException;
 import com.library.shared.exception.ErrorCode;
 import com.library.shared.util.StaticVariable;
@@ -60,8 +55,8 @@ import org.springframework.web.reactive.function.client.WebClient;
 @RequiredArgsConstructor
 public class AuthServiceImpl implements AuthService {
 
-  private final RSAKeyRecord rsaKeyRecord;
-  private final RefreshTokensRepository refreshTokensRepository;
+  private final com.library.auth.properties.RSAKeyRecord rsaKeyRecord;
+  private final com.library.auth.domain.repository.RefreshTokensRepository refreshTokensRepository;
   private final ClientRegistrationRepository clientRegistrationRepository;
   private final WebClient webClient;
   private final UserRepository userRepository;
@@ -79,7 +74,7 @@ public class AuthServiceImpl implements AuthService {
   private String baseUrl;
 
   @Override
-  public String generateToken(User user, PurposeToken purpose) {
+  public String generateToken(User user, com.library.auth.application.enums.PurposeToken purpose) {
     // Header
     JWSHeader header = new JWSHeader.Builder(JWSAlgorithm.RS256)
         .keyID(rsaKeyRecord.keyId())
@@ -106,8 +101,8 @@ public class AuthServiceImpl implements AuthService {
     }
 
     // save refresh token if purpose is REFRESH
-    if (purpose == PurposeToken.REFRESH) {
-      RefreshTokens refreshToken = new RefreshTokens(UUIDToken.of(jwtId),
+    if (purpose == com.library.auth.application.enums.PurposeToken.REFRESH) {
+      com.library.auth.domain.entity.RefreshTokens refreshToken = new com.library.auth.domain.entity.RefreshTokens(UUIDToken.of(jwtId),
           "deviceId",
           user.getId().getValue(),
           Instant.now().plusSeconds(expireSeconds)
@@ -119,7 +114,7 @@ public class AuthServiceImpl implements AuthService {
   }
 
 
-  private long getExpirationSeconds(PurposeToken purpose) {
+  private long getExpirationSeconds(com.library.auth.application.enums.PurposeToken purpose) {
     return switch (purpose) {
       case ACCESS -> expirationTime;      // default 1h (config: EXP_TOKEN)
       case VERIFY_EMAIL -> 24 * 60 * 60; // 24 hours
@@ -128,7 +123,7 @@ public class AuthServiceImpl implements AuthService {
     };
   }
 
-  private JWTClaimsSet buildClaims(User user, PurposeToken purpose, String jwtId,
+  private JWTClaimsSet buildClaims(User user, com.library.auth.application.enums.PurposeToken purpose, String jwtId,
       long expireSeconds) {
     return new JWTClaimsSet.Builder()
         .issuer("library-hcmut.com")
@@ -149,7 +144,7 @@ public class AuthServiceImpl implements AuthService {
 
   @Override
   @Transactional
-  public TokenResponse oauth2CallBack(String loginType, String code, String deviceId) {
+  public com.library.auth.dto.response.TokenResponse oauth2CallBack(String loginType, String code, String deviceId) {
     // load client registration
     ClientRegistration clientRegistration = clientRegistrationRepository.findByRegistrationId(
         loginType);
@@ -190,12 +185,12 @@ public class AuthServiceImpl implements AuthService {
     }
 
     // Here you would typically generate a JWT token or similar
-    String accessTokenResponse = generateToken(user, PurposeToken.ACCESS);
-    String refreshToken = generateToken(user, PurposeToken.REFRESH);
+    String accessTokenResponse = generateToken(user, com.library.auth.application.enums.PurposeToken.ACCESS);
+    String refreshToken = generateToken(user, com.library.auth.application.enums.PurposeToken.REFRESH);
     boolean isNewUser = Objects.requireNonNull(user).getProfile().getStudentId() == null;
 
 //        loginAttemptsService.loginSucceeded(user.getId());
-    return TokenResponse.builder()
+    return com.library.auth.dto.response.TokenResponse.builder()
         .accessToken(accessTokenResponse)
         .refreshToken(refreshToken)
         .isNewUser(isNewUser)

@@ -3,7 +3,6 @@ package com.library.circulation.domain.entities;
 import com.library.circulation.domain.enums.PaymentStatus;
 import com.library.circulation.domain.valueobject.FineId;
 import com.library.circulation.domain.valueobject.TransactionId;
-import com.library.user.domain.enums.ViolationType;
 import java.math.BigDecimal;
 import java.time.Instant;
 import java.util.ArrayList;
@@ -27,7 +26,7 @@ public class Fine {
   private Instant createAt;
   private PaymentStatus status;
   private Instant paidDate;
-  private ViolationType type;
+  private com.library.user.domain.enums.ViolationType type;
 
   // Domain events
   private final List<Object> domainEvents = new ArrayList<>();

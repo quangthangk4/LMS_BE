@@ -5,6 +5,7 @@ import com.library.circulation.domain.enums.PaymentStatus;
 import com.library.circulation.dto.response.FineResponse;
 import com.library.circulation.infrastructure.persistence.entity.FineEntity;
 import com.library.circulation.infrastructure.persistence.repository.FineJpaRepository;
+import com.library.shared.constant.RoleConstants;
 import com.library.shared.exception.AppException;
 import com.library.shared.exception.ErrorCode;
 import com.library.shared.kafka.KafkaTopics;
@@ -41,10 +42,11 @@ public class PayFineUseCaseImpl implements PayFineUseCase {
     private final FineJpaRepository fineJpaRepository;
     private final NamedParameterJdbcTemplate jdbcTemplate;
     private final KafkaTemplate<String, Object> kafkaTemplate;
+    private final com.library.shared.service.AuditLogService auditLogService;
 
     @Override
     @Transactional
-    public FineResponse execute(Long fineId) {
+    public FineResponse execute(Long fineId, Long librarianId) {
         FineEntity fine = fineJpaRepository.findById(fineId)
             .orElseThrow(() -> new AppException(ErrorCode.FINE_NOT_FOUND));
 
@@ -54,6 +56,7 @@ public class PayFineUseCaseImpl implements PayFineUseCase {
 
         fine.setPaymentStatus(PaymentStatus.PAID);
         fine.setPaidDate(Instant.now());
+        fine.setPaidByLibrarianId(librarianId);
         fineJpaRepository.save(fine);
 
         log.info("Fine paid: fineId={}", fineId);
@@ -83,6 +86,16 @@ public class PayFineUseCaseImpl implements PayFineUseCase {
             Map.of("publicationTitle", publicationTitle,
                    "fineAmount", new java.text.DecimalFormat("#,###").format(fineAmount) + "đ")
         ));
+
+        auditLogService.log(
+            librarianId,
+            RoleConstants.LIBRARIAN,
+            "PAY_FINE",
+            "fines",
+            fineId,
+            "Librarian marked one fine as paid",
+            Map.of("fineId", fineId, "transactionId", row.get("transaction_id"), "amount", fineAmount)
+        );
 
         return FineResponse.builder()
             .fineId(((Number) row.get("id")).longValue())

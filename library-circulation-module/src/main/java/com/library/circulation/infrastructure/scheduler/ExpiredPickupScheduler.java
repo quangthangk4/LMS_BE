@@ -1,7 +1,6 @@
 package com.library.circulation.infrastructure.scheduler;
 
 import com.library.circulation.infrastructure.service.ReservationAssignmentService;
-import com.library.shared.port.ItemStatusPort;
 import com.library.shared.kafka.KafkaTopics;
 import com.library.shared.kafka.event.NotificationMessage;
 import java.util.List;
@@ -37,7 +36,7 @@ public class ExpiredPickupScheduler {
         """;
 
     private final NamedParameterJdbcTemplate jdbcTemplate;
-    private final ItemStatusPort itemStatusPort;
+    private final com.library.shared.port.ItemStatusPort itemStatusPort;
     private final KafkaTemplate<String, Object> kafkaTemplate;
     private final ReservationAssignmentService reservationAssignmentService;
 

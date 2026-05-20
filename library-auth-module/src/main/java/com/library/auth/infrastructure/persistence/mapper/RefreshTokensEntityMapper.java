@@ -1,8 +1,6 @@
 package com.library.auth.infrastructure.persistence.mapper;
 
-import com.library.auth.domain.entity.RefreshTokens;
 import com.library.auth.domain.valueobject.UUIDToken;
-import com.library.auth.infrastructure.persistence.entity.RefreshTokensEntity;
 import org.mapstruct.Mapper;
 import org.mapstruct.Mapping;
 import org.mapstruct.ObjectFactory;
@@ -10,14 +8,14 @@ import org.mapstruct.ObjectFactory;
 @Mapper(componentModel = "spring")
 public interface RefreshTokensEntityMapper {
 
-    RefreshTokens toDomain(RefreshTokensEntity refreshTokens);
+    com.library.auth.domain.entity.RefreshTokens toDomain(com.library.auth.infrastructure.persistence.entity.RefreshTokensEntity refreshTokens);
 
     @Mapping(target = "uuidToken", source = "id")
-    RefreshTokensEntity toEntity(RefreshTokens refreshTokens);
+    com.library.auth.infrastructure.persistence.entity.RefreshTokensEntity toEntity(com.library.auth.domain.entity.RefreshTokens refreshTokens);
 
     @ObjectFactory
-    default RefreshTokens create(RefreshTokensEntity entity) {
-        return new RefreshTokens(
+    default com.library.auth.domain.entity.RefreshTokens create(com.library.auth.infrastructure.persistence.entity.RefreshTokensEntity entity) {
+        return new com.library.auth.domain.entity.RefreshTokens(
                 UUIDToken.of(entity.getUuidToken()),
                 entity.getDeviceId(),
                 entity.getUserId(),

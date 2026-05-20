@@ -5,6 +5,7 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import com.library.circulation.application.fine.FinePaymentService;
 import com.library.circulation.dto.response.FinePaymentLinkResponse;
 import com.library.circulation.infrastructure.payment.PayOsClient;
+import com.library.shared.constant.RoleConstants;
 import com.library.shared.exception.AppException;
 import com.library.shared.exception.ErrorCode;
 import com.library.shared.kafka.KafkaTopics;
@@ -59,13 +60,19 @@ public class FinePaymentServiceImpl implements FinePaymentService {
         INSERT INTO fine_payment_orders (
             id, created_at, updated_at, student_id, user_id, order_code,
             amount, fine_count, fine_ids, description, provider, status,
-            payment_link_id, checkout_url, qr_code
+            payment_link_id, checkout_url, qr_code, created_by_librarian_id
         )
         VALUES (
             :id, NOW(), NOW(), :studentId, :userId, :orderCode,
             :amount, :fineCount, :fineIds, :description, 'PAYOS', 'PENDING',
-            :paymentLinkId, :checkoutUrl, :qrCode
+            :paymentLinkId, :checkoutUrl, :qrCode, :librarianId
         )
+        """;
+
+    private static final String INSERT_ORDER_FINE_SQL = """
+        INSERT INTO fine_payment_order_fines (order_id, fine_id)
+        VALUES (:orderId, :fineId)
+        ON CONFLICT DO NOTHING
         """;
 
     private static final String FIND_ORDER_BY_CODE_SQL = """
@@ -78,7 +85,8 @@ public class FinePaymentServiceImpl implements FinePaymentService {
     private static final String MARK_FINE_IDS_PAID_SQL = """
         UPDATE fines
         SET payment_status = 'PAID',
-            paid_date = NOW()
+            paid_date = NOW(),
+            paid_by_librarian_id = :librarianId
         WHERE payment_status = 'UNPAID'
           AND id IN (:fineIds)
         """;
@@ -88,6 +96,7 @@ public class FinePaymentServiceImpl implements FinePaymentService {
         SET status = 'PAID',
             paid_at = NOW(),
             reference = :reference,
+            paid_by_librarian_id = :librarianId,
             updated_at = NOW()
         WHERE order_code = :orderCode
         """;
@@ -96,13 +105,14 @@ public class FinePaymentServiceImpl implements FinePaymentService {
     private final PayOsClient payOsClient;
     private final ObjectMapper objectMapper;
     private final KafkaTemplate<String, Object> kafkaTemplate;
+    private final com.library.shared.service.AuditLogService auditLogService;
 
     @Value("${base.frontend-url:http://localhost:3000}")
     private String frontendUrl;
 
     @Override
     @Transactional
-    public FinePaymentLinkResponse createPayOsPaymentLink(String studentId) {
+    public FinePaymentLinkResponse createPayOsPaymentLink(String studentId, Long librarianId) {
         String normalizedStudentId = studentId.trim();
         List<Map<String, Object>> rows = jdbcTemplate.queryForList(
             FIND_STUDENT_FINES_SQL,
@@ -147,10 +157,11 @@ public class FinePaymentServiceImpl implements FinePaymentService {
             frontendUrl + "/#/librarianpage/circulation?payment=success"
         );
 
+        Long orderId = TsIdGenerator.next();
         jdbcTemplate.update(
             INSERT_ORDER_SQL,
             new MapSqlParameterSource()
-                .addValue("id", TsIdGenerator.next())
+                .addValue("id", orderId)
                 .addValue("studentId", normalizedStudentId)
                 .addValue("userId", userId)
                 .addValue("orderCode", orderCode)
@@ -161,7 +172,14 @@ public class FinePaymentServiceImpl implements FinePaymentService {
                 .addValue("paymentLinkId", paymentLink.paymentLinkId())
                 .addValue("checkoutUrl", paymentLink.checkoutUrl())
                 .addValue("qrCode", paymentLink.qrCode())
+                .addValue("librarianId", librarianId)
         );
+        fineIds.forEach(fineId -> jdbcTemplate.update(
+            INSERT_ORDER_FINE_SQL,
+            new MapSqlParameterSource()
+                .addValue("orderId", orderId)
+                .addValue("fineId", fineId)
+        ));
 
         return FinePaymentLinkResponse.builder()
             .orderCode(orderCode)
@@ -195,12 +213,12 @@ public class FinePaymentServiceImpl implements FinePaymentService {
         BigDecimal amount = new BigDecimal(String.valueOf(data.get("amount")));
         String reference = data.get("reference") != null ? String.valueOf(data.get("reference")) : null;
 
-        return completePaidOrder(orderCode, amount, reference);
+        return completePaidOrder(orderCode, amount, reference, null);
     }
 
     @Override
     @Transactional
-    public int syncPayOsPayment(Long orderCode) {
+    public int syncPayOsPayment(Long orderCode, Long librarianId) {
         PayOsClient.PayOsPaymentStatus paymentStatus = payOsClient.getPaymentStatus(orderCode);
         if (paymentStatus.status() == null || !"PAID".equalsIgnoreCase(paymentStatus.status())) {
             return 0;
@@ -209,10 +227,10 @@ public class FinePaymentServiceImpl implements FinePaymentService {
         BigDecimal amount = paymentStatus.amount() != null
             ? BigDecimal.valueOf(paymentStatus.amount())
             : null;
-        return completePaidOrder(paymentStatus.orderCode(), amount, "PAYOS_SYNC");
+        return completePaidOrder(paymentStatus.orderCode(), amount, "PAYOS_SYNC", librarianId);
     }
 
-    private int completePaidOrder(Long orderCode, BigDecimal amount, String reference) {
+    private int completePaidOrder(Long orderCode, BigDecimal amount, String reference, Long librarianId) {
         List<Map<String, Object>> orders = jdbcTemplate.queryForList(
             FIND_ORDER_BY_CODE_SQL,
             Map.of("orderCode", orderCode)
@@ -236,13 +254,16 @@ public class FinePaymentServiceImpl implements FinePaymentService {
         List<Long> fineIds = parseFineIds((String) order.get("fine_ids"));
         int updated = jdbcTemplate.update(
             MARK_FINE_IDS_PAID_SQL,
-            new MapSqlParameterSource("fineIds", fineIds)
+            new MapSqlParameterSource()
+                .addValue("fineIds", fineIds)
+                .addValue("librarianId", librarianId)
         );
         jdbcTemplate.update(
             MARK_ORDER_PAID_SQL,
             new MapSqlParameterSource()
                 .addValue("orderCode", orderCode)
                 .addValue("reference", reference)
+                .addValue("librarianId", librarianId)
         );
 
         Long userId = ((Number) order.get("user_id")).longValue();
@@ -254,6 +275,15 @@ public class FinePaymentServiceImpl implements FinePaymentService {
             null,
             orderCode
         ));
+        auditLogService.log(
+            librarianId,
+            librarianId == null ? "PAYOS" : RoleConstants.LIBRARIAN,
+            "COMPLETE_FINE_PAYMENT_ORDER",
+            "fine_payment_orders",
+            orderCode,
+            "Fine payment order completed",
+            Map.of("orderCode", orderCode, "paidCount", updated, "provider", "PAYOS")
+        );
         log.info("payOS fine payment completed: orderCode={}, paidFines={}", orderCode, updated);
         return updated;
     }

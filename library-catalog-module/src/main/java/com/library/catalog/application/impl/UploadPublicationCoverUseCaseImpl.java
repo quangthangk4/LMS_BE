@@ -5,7 +5,6 @@ import com.library.catalog.infrastructure.persistence.entity.PublicationEntity;
 import com.library.catalog.infrastructure.persistence.repository.PublicationJpaRepository;
 import com.library.shared.exception.AppException;
 import com.library.shared.exception.ErrorCode;
-import com.library.shared.port.StoragePort;
 import java.util.Set;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -19,7 +18,7 @@ import org.springframework.web.multipart.MultipartFile;
 public class UploadPublicationCoverUseCaseImpl implements UploadPublicationCoverUseCase {
 
     private final PublicationJpaRepository publicationRepository;
-    private final StoragePort storagePort;
+    private final com.library.shared.port.StoragePort storagePort;
 
     private static final long MAX_SIZE = 5 * 1024 * 1024; // 5MB
     private static final Set<String> ALLOWED_TYPES = Set.of(

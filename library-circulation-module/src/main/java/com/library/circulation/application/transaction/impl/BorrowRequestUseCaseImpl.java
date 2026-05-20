@@ -1,6 +1,8 @@
 package com.library.circulation.application.transaction.impl;
 
 import com.library.catalog.domain.valueobject.ItemId;
+import com.library.circulation.application.policy.CirculationPolicy;
+import com.library.circulation.application.policy.CirculationPolicyService;
 import com.library.circulation.application.transaction.BorrowRequestUseCase;
 import com.library.circulation.domain.entities.BorrowingTransaction;
 import com.library.circulation.dto.request.BorrowRequestCommand;
@@ -12,8 +14,6 @@ import com.library.shared.exception.ErrorCode;
 import com.library.shared.kafka.KafkaTopics;
 import com.library.shared.kafka.event.LibraryEmailMessage;
 import com.library.shared.kafka.event.NotificationMessage;
-import com.library.shared.port.ItemSnapshot;
-import com.library.shared.port.ItemStatusPort;
 import com.library.user.domain.valueobject.UserId;
 import java.time.Instant;
 import java.time.LocalDate;
@@ -32,9 +32,6 @@ import org.springframework.transaction.annotation.Transactional;
 @RequiredArgsConstructor
 public class BorrowRequestUseCaseImpl implements BorrowRequestUseCase {
 
-  private static final int MAX_BORROW_LIMIT = 5;
-  private static final int PICKUP_DEADLINE_HOURS = 24;
-  private static final int INITIAL_DUE_DAYS = 14;
   private static final ZoneId ZONE = ZoneId.of("Asia/Ho_Chi_Minh");
 
   private static final String COUNT_ACTIVE_BORROWS_SQL = """
@@ -48,18 +45,20 @@ public class BorrowRequestUseCaseImpl implements BorrowRequestUseCase {
       WHERE bt.user_id = :userId AND f.payment_status = 'UNPAID'
       """;
 
-  private final ItemStatusPort itemStatusPort;
+  private final com.library.shared.port.ItemStatusPort itemStatusPort;
   private final BorrowingTransactionJpaRepository transactionJpaRepository;
   private final NamedParameterJdbcTemplate jdbcTemplate;
   private final KafkaTemplate<String, Object> kafkaTemplate;
+  private final CirculationPolicyService policyService;
 
   @Override
   @Transactional
   public BorrowTransactionResponse execute(Long userId, BorrowRequestCommand command) {
     Long itemId = command.itemId();
+    CirculationPolicy policy = policyService.getPolicy();
 
     // Infrastructure: pessimistic lock + fetch item
-    ItemSnapshot item = itemStatusPort.lockAndGet(itemId);
+    com.library.shared.port.ItemSnapshot item = itemStatusPort.lockAndGet(itemId);
 
     // Application: cross-aggregate checks
     if (!"AVAILABLE".equals(item.status())) {
@@ -69,15 +68,17 @@ public class BorrowRequestUseCaseImpl implements BorrowRequestUseCase {
     // đếm xem mượn bao nhiều sách rồi
     Long activeBorrows = jdbcTemplate.queryForObject(
         COUNT_ACTIVE_BORROWS_SQL, Map.of("userId", userId), Long.class);
-    if (activeBorrows != null && activeBorrows >= MAX_BORROW_LIMIT) {
+    if (activeBorrows != null && activeBorrows >= policy.maxActiveBorrows()) {
       throw new AppException(ErrorCode.USER_BORROW_LIMIT_EXCEEDED);
     }
 
     // check xem có phí phạt nào chưa trả không
-    Long unpaidFines = jdbcTemplate.queryForObject(
-        COUNT_UNPAID_FINES_SQL, Map.of("userId", userId), Long.class);
-    if (unpaidFines != null && unpaidFines > 0) {
-      throw new AppException(ErrorCode.USER_HAS_UNPAID_FINES);
+    if (Boolean.TRUE.equals(policy.blockBorrowWhenUnpaidFines())) {
+      Long unpaidFines = jdbcTemplate.queryForObject(
+          COUNT_UNPAID_FINES_SQL, Map.of("userId", userId), Long.class);
+      if (unpaidFines != null && unpaidFines > 0) {
+        throw new AppException(ErrorCode.USER_HAS_UNPAID_FINES);
+      }
     }
 
     // check xem đã mượn cuốn sách nào như vâỵ chưa (1 dạng sách chỉ mượn được 1 cuốn thôi)
@@ -89,8 +90,8 @@ public class BorrowRequestUseCaseImpl implements BorrowRequestUseCase {
     itemStatusPort.updateStatus(itemId, "RESERVED");
 
     // Domain: create transaction (business logic lives here)
-    Instant pickupDeadline = Instant.now().plusSeconds(PICKUP_DEADLINE_HOURS * 3600L);
-    LocalDate initialDueDate = LocalDate.now(ZONE).plusDays(INITIAL_DUE_DAYS);
+    Instant pickupDeadline = Instant.now().plusSeconds(policy.pickupDeadlineHours() * 3600L);
+    LocalDate initialDueDate = LocalDate.now(ZONE).plusDays(policy.defaultLoanDays());
     BorrowingTransaction transaction = BorrowingTransaction.createBorrowRequest(
         UserId.of(userId), ItemId.of(itemId), pickupDeadline, initialDueDate);
 
@@ -103,8 +104,8 @@ public class BorrowRequestUseCaseImpl implements BorrowRequestUseCase {
     kafkaTemplate.send(KafkaTopics.NOTIFICATION_SEND, new NotificationMessage(
         userId, "BORROW_SUCCESS",
         "Yêu cầu mượn sách đã được tạo",
-        String.format("Bạn đã đặt mượn '%s'. Đến %s để nhận sách trước 24h.",
-            item.publicationTitle(), location),
+        String.format("Bạn đã đặt mượn '%s'. Đến %s để nhận sách trước %d giờ.",
+            item.publicationTitle(), location, policy.pickupDeadlineHours()),
         null, entity.getId()
     ));
 
@@ -141,7 +142,7 @@ public class BorrowRequestUseCaseImpl implements BorrowRequestUseCase {
   }
 
   private BorrowTransactionResponse toResponse(BorrowingTransactionEntity entity,
-      ItemSnapshot item) {
+      com.library.shared.port.ItemSnapshot item) {
     return BorrowTransactionResponse.builder()
         .transactionId(entity.getId())
         .itemId(entity.getItemId())

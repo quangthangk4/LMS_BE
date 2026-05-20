@@ -5,8 +5,6 @@ import com.library.catalog.infrastructure.persistence.entity.PublicationEntity;
 import com.library.catalog.infrastructure.persistence.repository.PublicationJpaRepository;
 import com.library.shared.exception.AppException;
 import com.library.shared.exception.ErrorCode;
-import com.library.shared.port.AiPublicationProcessingPort;
-import com.library.shared.port.StoragePort;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.jdbc.core.JdbcTemplate;
@@ -21,8 +19,8 @@ import org.springframework.transaction.support.TransactionSynchronizationManager
 public class SaveDocumentUrlUseCaseImpl implements SaveDocumentUrlUseCase {
 
     private final PublicationJpaRepository publicationRepository;
-    private final StoragePort storagePort;
-    private final AiPublicationProcessingPort aiPublicationProcessingPort;
+    private final com.library.shared.port.StoragePort storagePort;
+    private final com.library.shared.port.AiPublicationProcessingPort aiPublicationProcessingPort;
     private final JdbcTemplate jdbcTemplate;
 
     @Override

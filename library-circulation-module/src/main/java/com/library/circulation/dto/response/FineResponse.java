@@ -3,7 +3,6 @@ package com.library.circulation.dto.response;
 import com.fasterxml.jackson.databind.annotation.JsonSerialize;
 import com.fasterxml.jackson.databind.ser.std.ToStringSerializer;
 import com.library.circulation.domain.enums.PaymentStatus;
-import com.library.user.domain.enums.ViolationType;
 import java.math.BigDecimal;
 import java.time.Instant;
 import lombok.Builder;
@@ -18,7 +17,7 @@ public class FineResponse {
     private Long transactionId;
     private String publicationTitle;
     private BigDecimal fineAmount;
-    private ViolationType type;
+    private com.library.user.domain.enums.ViolationType type;
     private PaymentStatus status;
     private Instant createdAt;
     private Instant paidDate;

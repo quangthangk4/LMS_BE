@@ -77,20 +77,22 @@ class FineControllerTest {
     @Test
     @DisplayName("PUT /fines/{id}/pay marks one fine paid")
     void payFine_shouldReturnPaidFine() throws Exception {
-        when(payFineUseCase.execute(10L)).thenReturn(fine(10L, PaymentStatus.PAID));
+        when(security.getCurrentUserId()).thenReturn(USER_ID);
+        when(payFineUseCase.execute(10L, USER_ID)).thenReturn(fine(10L, PaymentStatus.PAID));
 
         mockMvc.perform(put("/api/v1/fines/{id}/pay", 10L))
             .andExpect(status().isOk())
             .andExpect(jsonPath("$.data.fineId").value("10"))
             .andExpect(jsonPath("$.data.status").value("PAID"));
 
-        verify(payFineUseCase).execute(10L);
+        verify(payFineUseCase).execute(10L, USER_ID);
     }
 
     @Test
     @DisplayName("POST /fines/payments/cash returns paid count")
     void payAllFinesByCash_shouldReturnPaidCount() throws Exception {
-        when(payAllFinesUseCase.execute("22520001")).thenReturn(2);
+        when(security.getCurrentUserId()).thenReturn(USER_ID);
+        when(payAllFinesUseCase.execute("22520001", USER_ID)).thenReturn(2);
 
         mockMvc.perform(post("/api/v1/fines/payments/cash")
                 .param("studentId", "22520001"))
@@ -102,7 +104,8 @@ class FineControllerTest {
     @Test
     @DisplayName("POST /fines/payments/payos creates payment link")
     void createPayOsFinePayment_shouldReturnPaymentLink() throws Exception {
-        when(finePaymentService.createPayOsPaymentLink("22520001"))
+        when(security.getCurrentUserId()).thenReturn(USER_ID);
+        when(finePaymentService.createPayOsPaymentLink("22520001", USER_ID))
             .thenReturn(FinePaymentLinkResponse.builder()
                 .orderCode(123456L)
                 .paymentLinkId("payos-link-id")
@@ -127,7 +130,8 @@ class FineControllerTest {
     @Test
     @DisplayName("POST /fines/payments/payos/{orderCode}/sync returns paid count")
     void syncPayOsFinePayment_shouldReturnPaidCount() throws Exception {
-        when(finePaymentService.syncPayOsPayment(123456L)).thenReturn(2);
+        when(security.getCurrentUserId()).thenReturn(USER_ID);
+        when(finePaymentService.syncPayOsPayment(123456L, USER_ID)).thenReturn(2);
 
         mockMvc.perform(post("/api/v1/fines/payments/payos/{orderCode}/sync", 123456L))
             .andExpect(status().isOk())

@@ -10,6 +10,8 @@ import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
+import com.library.circulation.application.policy.CirculationPolicy;
+import com.library.circulation.application.policy.CirculationPolicyService;
 import com.library.circulation.application.transaction.impl.BorrowRequestUseCaseImpl;
 import com.library.circulation.dto.request.BorrowRequestCommand;
 import com.library.circulation.dto.response.BorrowTransactionResponse;
@@ -19,6 +21,8 @@ import com.library.shared.exception.AppException;
 import com.library.shared.exception.ErrorCode;
 import com.library.shared.port.ItemSnapshot;
 import com.library.shared.port.ItemStatusPort;
+import java.math.BigDecimal;
+import java.time.Instant;
 import java.util.Map;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
@@ -38,6 +42,7 @@ class BorrowRequestUseCaseTest {
     @Mock private BorrowingTransactionJpaRepository transactionJpaRepository;
     @Mock private NamedParameterJdbcTemplate jdbcTemplate;
     @Mock private KafkaTemplate<String, Object> kafkaTemplate;
+    @Mock private CirculationPolicyService policyService;
 
     @InjectMocks private BorrowRequestUseCaseImpl useCase;
 
@@ -53,6 +58,21 @@ class BorrowRequestUseCaseTest {
         availableItem = new ItemSnapshot(
             ITEM_ID, "AVAILABLE", PUBLICATION_ID, "Clean Code",
             "BC001", "Cơ sở 1 - Lý Thường Kiệt", "B4-301"
+        );
+        when(policyService.getPolicy()).thenReturn(defaultPolicy());
+    }
+
+    private CirculationPolicy defaultPolicy() {
+        return new CirculationPolicy(
+            48,
+            14,
+            5,
+            2,
+            new BigDecimal("1000"),
+            true,
+            null,
+            null,
+            Instant.now()
         );
     }
 

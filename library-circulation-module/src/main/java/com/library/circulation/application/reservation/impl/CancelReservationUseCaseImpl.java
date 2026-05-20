@@ -7,8 +7,6 @@ import com.library.circulation.infrastructure.persistence.repository.Reservation
 import com.library.circulation.infrastructure.service.ReservationAssignmentService;
 import com.library.shared.exception.AppException;
 import com.library.shared.exception.ErrorCode;
-import com.library.shared.port.ItemSnapshot;
-import com.library.shared.port.ItemStatusPort;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
@@ -20,7 +18,7 @@ import org.springframework.transaction.annotation.Transactional;
 public class CancelReservationUseCaseImpl implements CancelReservationUseCase {
 
     private final ReservationJpaRepository reservationJpaRepository;
-    private final ItemStatusPort itemStatusPort;
+    private final com.library.shared.port.ItemStatusPort itemStatusPort;
     private final ReservationAssignmentService assignmentService;
 
     @Override
@@ -47,7 +45,7 @@ public class CancelReservationUseCaseImpl implements CancelReservationUseCase {
 
         if (wasReadyForPickup && freedItemId != null) {
             // Release assigned item then check if next in queue can take it
-            ItemSnapshot item = itemStatusPort.lockAndGet(freedItemId);
+            com.library.shared.port.ItemSnapshot item = itemStatusPort.lockAndGet(freedItemId);
             itemStatusPort.updateStatus(freedItemId, "AVAILABLE");
             assignmentService.tryAssign(freedItemId, item.publicationId(), item.branch());
         }

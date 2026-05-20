@@ -1,6 +1,7 @@
 package com.library.circulation.application.transaction.impl;
 
 import com.library.catalog.domain.valueobject.ItemId;
+import com.library.circulation.application.policy.CirculationPolicyService;
 import com.library.circulation.application.transaction.ReturnBookUseCase;
 import com.library.circulation.domain.entities.BorrowingTransaction;
 import com.library.circulation.domain.valueobject.TransactionId;
@@ -15,8 +16,6 @@ import com.library.shared.exception.ErrorCode;
 import com.library.shared.kafka.KafkaTopics;
 import com.library.shared.kafka.event.LibraryEmailMessage;
 import com.library.shared.kafka.event.NotificationMessage;
-import com.library.shared.port.ItemSnapshot;
-import com.library.shared.port.ItemStatusPort;
 import com.library.circulation.infrastructure.service.ReservationAssignmentService;
 import com.library.shared.util.TsIdGenerator;
 import com.library.user.domain.enums.ViolationType;
@@ -41,8 +40,6 @@ import org.springframework.transaction.annotation.Transactional;
 public class ReturnBookUseCaseImpl implements ReturnBookUseCase {
 
     private static final ZoneId ZONE = ZoneId.of("Asia/Ho_Chi_Minh");
-    private static final BigDecimal OVERDUE_FINE_PER_DAY = BigDecimal.valueOf(1_000);
-
     private static final String FIND_ACTIVE_TRANSACTION_SQL = """
         SELECT t.id
         FROM borrowing_transactions t
@@ -52,18 +49,19 @@ public class ReturnBookUseCaseImpl implements ReturnBookUseCase {
         LIMIT 1
         """;
 
-    private final ItemStatusPort itemStatusPort;
+    private final com.library.shared.port.ItemStatusPort itemStatusPort;
     private final BorrowingTransactionJpaRepository transactionJpaRepository;
     private final FineJpaRepository fineJpaRepository;
     private final NamedParameterJdbcTemplate jdbcTemplate;
     private final KafkaTemplate<String, Object> kafkaTemplate;
     private final ReservationAssignmentService reservationAssignmentService;
+    private final CirculationPolicyService policyService;
 
     @Override
     @Transactional
     public ReturnResponse execute(Long librarianId, ReturnCommand command) {
         // 1. Lock item by barcode
-        ItemSnapshot item = itemStatusPort.lockAndGetByBarcode(command.barcode());
+        com.library.shared.port.ItemSnapshot item = itemStatusPort.lockAndGetByBarcode(command.barcode());
 
         // 2. Find active transaction for this item
         List<Map<String, Object>> rows = jdbcTemplate.queryForList(
@@ -91,7 +89,7 @@ public class ReturnBookUseCaseImpl implements ReturnBookUseCase {
         BigDecimal overdueFineAmount = null;
         if (overdue) {
             long daysLate = ChronoUnit.DAYS.between(transaction.getDueDate(), today);
-            overdueFineAmount = OVERDUE_FINE_PER_DAY.multiply(BigDecimal.valueOf(daysLate));
+            overdueFineAmount = policyService.getPolicy().overdueFinePerDay().multiply(BigDecimal.valueOf(daysLate));
             FineEntity fine = FineEntity.builder()
                 .transactionId(transactionId)
                 .fineAmount(overdueFineAmount)

@@ -31,24 +31,13 @@ public class AdminAccountInitializer implements CommandLineRunner {
   private static final String ADMIN_PASSWORD = "admin";
   private static final String ADMIN_FULL_NAME = "Hồ Sỹ Thắng - Admin";
 
-  private static final String STUDENT_EMAIL = "student@hcmut.edu.vn";
-  private static final String STUDENT_PASSWORD = "student";
-  private static final String STUDENT_FULL_NAME = "Hồ Sỹ Thắng - Student";
-
-  private static final String LIBRARIAN_EMAIL = "librarian@hcmut.edu.vn";
-  private static final String LIBRARIAN_PASSWORD = "librarian";
-  private static final String LIBRARIAN_FULL_NAME = "Hồ Sỹ Thắng - Librarian";
-
   @Override
   public void run(String... args) {
     log.info("Starting account initialization...");
 
     initializeAccount(ADMIN_EMAIL, ADMIN_PASSWORD, ADMIN_FULL_NAME, RoleConstants.ADMIN);
-    initializeAccount(STUDENT_EMAIL, STUDENT_PASSWORD, STUDENT_FULL_NAME, RoleConstants.STUDENT);
-    initializeAccount(LIBRARIAN_EMAIL, LIBRARIAN_PASSWORD, LIBRARIAN_FULL_NAME,
-        RoleConstants.LIBRARIAN);
 
-    log.info("account initialization completed.");
+    log.info("Admin account initialization completed.");
   }
 
   /**

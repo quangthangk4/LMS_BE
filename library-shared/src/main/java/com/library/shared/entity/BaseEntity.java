@@ -35,4 +35,12 @@ public abstract class BaseEntity {
     protected void onUpdate() {
         this.updatedAt = Instant.now();
     }
+
+    public Long getId() {
+        return id;
+    }
+
+    public void setId(Long id) {
+        this.id = id;
+    }
 }

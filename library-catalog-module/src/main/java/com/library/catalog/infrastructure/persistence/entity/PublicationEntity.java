@@ -58,5 +58,12 @@ public class PublicationEntity extends BaseEntity {
     private String tableOfContents;
 
     private Long publisherId;
+
+    @Column(name = "created_by_librarian_id")
+    private Long createdByLibrarianId;
+
+    @Column(name = "updated_by_librarian_id")
+    private Long updatedByLibrarianId;
+
     public PublicationEntity() {}
 }

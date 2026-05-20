@@ -3,8 +3,6 @@ package com.library.circulation.application.fine.impl;
 import com.library.circulation.application.fine.GetMyFinesUseCase;
 import com.library.circulation.domain.enums.PaymentStatus;
 import com.library.circulation.dto.response.FineResponse;
-import com.library.shared.dto.PageResponse;
-import com.library.user.domain.enums.ViolationType;
 import java.math.BigDecimal;
 import java.sql.Timestamp;
 import java.util.ArrayList;
@@ -46,7 +44,7 @@ public class GetMyFinesUseCaseImpl implements GetMyFinesUseCase {
 
     @Override
     @Transactional(readOnly = true)
-    public PageResponse<FineResponse> execute(Long userId, String status, int page, int size) {
+    public com.library.shared.dto.PageResponse<FineResponse> execute(Long userId, String status, int page, int size) {
         Map<String, Object> params = new HashMap<>();
         params.put("userId", userId);
         params.put("status", status != null ? status.toUpperCase() : null);
@@ -64,7 +62,7 @@ public class GetMyFinesUseCaseImpl implements GetMyFinesUseCase {
                 .transactionId(((Number) row.get("transaction_id")).longValue())
                 .publicationTitle((String) row.get("publication_title"))
                 .fineAmount((BigDecimal) row.get("fine_amount"))
-                .type(ViolationType.valueOf((String) row.get("type")))
+                .type(com.library.user.domain.enums.ViolationType.valueOf((String) row.get("type")))
                 .status(PaymentStatus.valueOf((String) row.get("payment_status")))
                 .createdAt(row.get("created_at") != null ? ((Timestamp) row.get("created_at")).toInstant() : null)
                 .paidDate(row.get("paid_date") != null ? ((Timestamp) row.get("paid_date")).toInstant() : null)
@@ -73,7 +71,7 @@ public class GetMyFinesUseCaseImpl implements GetMyFinesUseCase {
         }
 
         int totalPages = (int) Math.ceil((double) totalCount / size);
-        return PageResponse.<FineResponse>builder()
+        return com.library.shared.dto.PageResponse.<FineResponse>builder()
             .content(content)
             .currentPage(page)
             .pageSize(size)

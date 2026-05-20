@@ -19,5 +19,7 @@ public class RatingReplyResponse {
 
   private String content;
   private String librarianName;
+  private String librarianAvatarUrl;
+  private String librarianRoleLabel;
   private Instant createdAt;
 }

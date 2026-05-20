@@ -4,7 +4,6 @@ import com.library.circulation.application.transaction.GetAllBorrowingTransactio
 import com.library.circulation.application.transaction.GetAllTransactionByItemUseCase;
 import com.library.circulation.dto.response.TransactionListResponse;
 import com.library.circulation.infrastructure.persistence.repository.BorrowingTransactionJpaRepository;
-import com.library.shared.dto.PageResponse;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
@@ -19,11 +18,11 @@ public class GetAllTransactionByItemUseCaseImpl implements GetAllTransactionByIt
     private final BorrowingTransactionJpaRepository jpaRepository;
 
     @Override
-    public PageResponse<TransactionListResponse> execute(Long itemId, int page, int size) {
+    public com.library.shared.dto.PageResponse<TransactionListResponse> execute(Long itemId, int page, int size) {
         Sort sort = Sort.by(Sort.Direction.DESC, "createdAt");
         Pageable pageable = PageRequest.of(page,size, sort);
         Page<TransactionListResponse> transactions = jpaRepository.
                 getAllTransactionByItemId(itemId,pageable);
-        return PageResponse.from(transactions);
+        return com.library.shared.dto.PageResponse.from(transactions);
     }
 }

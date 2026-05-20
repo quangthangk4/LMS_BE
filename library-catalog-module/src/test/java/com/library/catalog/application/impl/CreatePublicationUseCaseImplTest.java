@@ -53,7 +53,7 @@ class CreatePublicationUseCaseImplTest {
             new ObjectMapper().readTree("[{\"title\":\"Chapter 1\"}]")
         );
 
-        Long id = useCase.execute(request);
+        Long id = useCase.execute(request, 99L);
 
         ArgumentCaptor<PublicationEntity> publicationCaptor =
             ArgumentCaptor.forClass(PublicationEntity.class);
@@ -65,6 +65,8 @@ class CreatePublicationUseCaseImplTest {
         assertThat(saved.getIsbn()).isEqualTo("9780132350884");
         assertThat(saved.getTitle()).isEqualTo("Clean Code");
         assertThat(saved.getPublisherId()).isEqualTo(10L);
+        assertThat(saved.getCreatedByLibrarianId()).isEqualTo(99L);
+        assertThat(saved.getUpdatedByLibrarianId()).isEqualTo(99L);
         assertThat(saved.getTableOfContents()).contains("Chapter 1");
 
         verify(jdbcTemplate).update(

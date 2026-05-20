@@ -20,7 +20,7 @@ public class UpdatePublicationUseCaseImpl implements UpdatePublicationUseCase {
 
     @Override
     @Transactional
-    public void execute(Long publicationId, UpdatePublicationRequest request) {
+    public void execute(Long publicationId, UpdatePublicationRequest request, Long librarianId) {
         PublicationEntity entity = publicationJpaRepository.findById(publicationId)
                 .orElseThrow(() -> new IllegalArgumentException("Publication not found: " + publicationId));
 
@@ -39,6 +39,7 @@ public class UpdatePublicationUseCaseImpl implements UpdatePublicationUseCase {
         entity.setCallNumber(request.callNumber());
         entity.setAiTargetAudience(request.aiTargetAudience());
         entity.setPublisherId(request.publisherId());
+        entity.setUpdatedByLibrarianId(librarianId);
 
         publicationJpaRepository.saveAndFlush(entity);
 

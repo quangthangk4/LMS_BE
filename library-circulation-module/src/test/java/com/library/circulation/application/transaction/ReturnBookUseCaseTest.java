@@ -8,6 +8,8 @@ import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
+import com.library.circulation.application.policy.CirculationPolicy;
+import com.library.circulation.application.policy.CirculationPolicyService;
 import com.library.circulation.application.transaction.impl.ReturnBookUseCaseImpl;
 import com.library.circulation.domain.enums.TransactionStatus;
 import com.library.circulation.dto.request.ReturnCommand;
@@ -47,6 +49,7 @@ class ReturnBookUseCaseTest {
     @Mock private NamedParameterJdbcTemplate jdbcTemplate;
     @Mock private KafkaTemplate<String, Object> kafkaTemplate;
     @Mock private ReservationAssignmentService reservationAssignmentService;
+    @Mock private CirculationPolicyService policyService;
 
     @InjectMocks private ReturnBookUseCaseImpl useCase;
 
@@ -114,6 +117,17 @@ class ReturnBookUseCaseTest {
             .thenReturn(Optional.of(buildEntity(threeDaysAgo)));
         when(transactionJpaRepository.save(any())).thenAnswer(inv -> inv.getArgument(0));
         when(fineJpaRepository.save(any())).thenAnswer(inv -> inv.getArgument(0));
+        when(policyService.getPolicy()).thenReturn(new CirculationPolicy(
+            48,
+            14,
+            5,
+            2,
+            new BigDecimal("1000"),
+            true,
+            null,
+            null,
+            Instant.now()
+        ));
 
         // When
         ReturnResponse result = useCase.execute(LIBRARIAN_ID, new ReturnCommand(BARCODE));

@@ -1,8 +1,8 @@
 package com.library.circulation.infrastructure.service;
 
+import com.library.circulation.application.policy.CirculationPolicyService;
 import com.library.shared.kafka.KafkaTopics;
 import com.library.shared.kafka.event.NotificationMessage;
-import com.library.shared.port.ItemStatusPort;
 import com.library.shared.kafka.event.LibraryEmailMessage;
 import java.sql.Timestamp;
 import java.time.Instant;
@@ -23,8 +23,6 @@ import org.springframework.transaction.annotation.Transactional;
 @Service
 @RequiredArgsConstructor
 public class ReservationAssignmentService {
-
-    static final long HOLD_HOURS = 48;
 
     private static final String FIND_PENDING_SQL = """
         SELECT r.id, r.user_id, p.title AS publication_title
@@ -51,8 +49,9 @@ public class ReservationAssignmentService {
         """;
 
     private final NamedParameterJdbcTemplate jdbcTemplate;
-    private final ItemStatusPort itemStatusPort;
+    private final com.library.shared.port.ItemStatusPort itemStatusPort;
     private final KafkaTemplate<String, Object> kafkaTemplate;
+    private final CirculationPolicyService policyService;
 
     /**
      * Called after an item becomes AVAILABLE.
@@ -69,7 +68,7 @@ public class ReservationAssignmentService {
         Long reservationId   = ((Number) rows.get(0).get("id")).longValue();
         Long userId          = ((Number) rows.get(0).get("user_id")).longValue();
         String pubTitle      = (String) rows.get(0).get("publication_title");
-        Instant holdExpTime  = Instant.now().plus(HOLD_HOURS, ChronoUnit.HOURS);
+        Instant holdExpTime  = Instant.now().plus(policyService.getPolicy().pickupDeadlineHours(), ChronoUnit.HOURS);
         String deadline      = VN_FORMATTER.format(holdExpTime);
 
         jdbcTemplate.update(ASSIGN_SQL, Map.of(

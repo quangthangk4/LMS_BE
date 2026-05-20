@@ -1,7 +1,6 @@
 package com.library.catalog.application.impl;
 
 import com.library.catalog.application.RecordPublicationViewUseCase;
-import com.library.shared.port.UserInteractionPort;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 
@@ -9,10 +8,10 @@ import org.springframework.stereotype.Service;
 @RequiredArgsConstructor
 public class RecordPublicationViewUseCaseImpl implements RecordPublicationViewUseCase {
 
-    private final UserInteractionPort userInteractionPort;
+    private final com.library.shared.port.UserInteractionPort userInteractionPort;
 
     @Override
     public void execute(Long publicationId, Long userId) {
-        userInteractionPort.record(userId, publicationId, UserInteractionPort.TYPE_VIEW);
+        userInteractionPort.record(userId, publicationId, com.library.shared.port.UserInteractionPort.TYPE_VIEW);
     }
 }

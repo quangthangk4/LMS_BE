@@ -1,8 +1,7 @@
 package com.library.circulation.application.transaction.impl;
 
 import com.library.catalog.domain.valueobject.ItemId;
-import com.library.shared.port.ItemSnapshot;
-import com.library.shared.port.ItemStatusPort;
+import com.library.circulation.application.policy.CirculationPolicyService;
 import com.library.circulation.application.transaction.ConfirmPickupUseCase;
 import com.library.circulation.domain.entities.BorrowingTransaction;
 import com.library.circulation.domain.enums.TransactionStatus;
@@ -14,7 +13,6 @@ import com.library.shared.exception.AppException;
 import com.library.shared.exception.ErrorCode;
 import com.library.shared.kafka.KafkaTopics;
 import com.library.shared.kafka.event.NotificationMessage;
-import com.library.shared.port.UserInteractionPort;
 import com.library.user.domain.valueobject.UserId;
 import java.time.LocalDate;
 import java.time.ZoneId;
@@ -30,15 +28,15 @@ import org.springframework.transaction.annotation.Transactional;
 @RequiredArgsConstructor
 public class ConfirmPickupUseCaseImpl implements ConfirmPickupUseCase {
 
-    private static final int BORROW_DURATION_DAYS = 14;
     private static final ZoneId ZONE = ZoneId.of("Asia/Ho_Chi_Minh");
 
     private static final DateTimeFormatter DUE_DATE_FMT = DateTimeFormatter.ofPattern("dd/MM/yyyy");
 
     private final BorrowingTransactionJpaRepository transactionJpaRepository;
-    private final ItemStatusPort itemStatusPort;
+    private final com.library.shared.port.ItemStatusPort itemStatusPort;
     private final KafkaTemplate<String, Object> kafkaTemplate;
-    private final UserInteractionPort userInteractionPort;
+    private final com.library.shared.port.UserInteractionPort userInteractionPort;
+    private final CirculationPolicyService policyService;
 
     @Override
     @Transactional
@@ -48,13 +46,13 @@ public class ConfirmPickupUseCaseImpl implements ConfirmPickupUseCase {
             .orElseThrow(() -> new AppException(ErrorCode.TRANSACTION_NOT_FOUND));
 
         // Infrastructure: lock item
-        ItemSnapshot item = itemStatusPort.lockAndGet(entity.getItemId());
+        com.library.shared.port.ItemSnapshot item = itemStatusPort.lockAndGet(entity.getItemId());
 
         // Reconstruct domain entity from persistence
         BorrowingTransaction transaction = toDomain(entity);
 
         // Domain: confirmPickup contains invariant (status must be WAITING_FOR_PICKUP)
-        LocalDate actualDueDate = LocalDate.now(ZONE).plusDays(BORROW_DURATION_DAYS);
+        LocalDate actualDueDate = LocalDate.now(ZONE).plusDays(policyService.getPolicy().defaultLoanDays());
         transaction.confirmPickup(UserId.of(librarianId), actualDueDate);
 
         // Infrastructure: update item and persist transaction
@@ -74,7 +72,7 @@ public class ConfirmPickupUseCaseImpl implements ConfirmPickupUseCase {
             entity.getId()
         ));
 
-        userInteractionPort.record(entity.getUserId(), item.publicationId(), UserInteractionPort.TYPE_BORROW);
+        userInteractionPort.record(entity.getUserId(), item.publicationId(), com.library.shared.port.UserInteractionPort.TYPE_BORROW);
         log.info("Pickup confirmed: transactionId={}, librarianId={}", transactionId, librarianId);
 
         return BorrowTransactionResponse.builder()

@@ -2,9 +2,6 @@ package com.library.auth.application.impl;
 
 import com.library.auth.application.ForgotPasswordUseCase;
 import com.library.auth.domain.entity.PasswordResetToken;
-import com.library.auth.domain.repository.PasswordResetTokenRepository;
-import com.library.auth.dto.request.ForgotPasswordRequest;
-import com.library.auth.infrastructure.kafka.ForgotPasswordKafkaPublisher;
 import com.library.shared.exception.AppException;
 import com.library.shared.exception.ErrorCode;
 import com.library.shared.kafka.event.ForgotPasswordMessage;
@@ -25,15 +22,15 @@ import org.springframework.transaction.annotation.Transactional;
 public class ForgotPasswordUseCaseImpl implements ForgotPasswordUseCase {
 
   private final UserRepository userRepository;
-  private final PasswordResetTokenRepository passwordResetTokenRepository;
-  private final ForgotPasswordKafkaPublisher kafkaPublisher;
+  private final com.library.auth.domain.repository.PasswordResetTokenRepository passwordResetTokenRepository;
+  private final com.library.auth.infrastructure.kafka.ForgotPasswordKafkaPublisher kafkaPublisher;
 
   @Value("${base.frontend-url}")
   private String frontendUrl;
 
   @Override
   @Transactional
-  public void execute(ForgotPasswordRequest request) {
+  public void execute(com.library.auth.dto.request.ForgotPasswordRequest request) {
     User user = userRepository.findByEmail(Email.of(request.email()))
         .orElseThrow(() -> new AppException(ErrorCode.USER_NOT_FOUND));
 

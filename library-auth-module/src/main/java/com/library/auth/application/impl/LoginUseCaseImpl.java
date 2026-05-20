@@ -2,7 +2,6 @@ package com.library.auth.application.impl;
 
 import com.library.auth.application.LoginUseCase;
 import com.library.auth.application.enums.PurposeToken;
-import com.library.auth.dto.response.TokenResponse;
 import com.library.shared.exception.AppException;
 import com.library.shared.exception.ErrorCode;
 import com.library.user.application.dto.request.LoginRequest;
@@ -24,7 +23,7 @@ public class LoginUseCaseImpl implements LoginUseCase {
 
   @Override
   @Transactional
-  public TokenResponse execute(LoginRequest request) {
+  public com.library.auth.dto.response.TokenResponse execute(LoginRequest request) {
     User user = userRepository.findByEmail(Email.of(request.getEmail())).orElseThrow(
         () -> new AppException(ErrorCode.EMAIL_OR_PASSWORD_INCORRECT)
     );
@@ -38,7 +37,7 @@ public class LoginUseCaseImpl implements LoginUseCase {
     String accessToken = authService.generateToken(user, PurposeToken.ACCESS);
     String refreshToken = authService.generateToken(user, PurposeToken.REFRESH);
 
-    return TokenResponse.builder()
+    return com.library.auth.dto.response.TokenResponse.builder()
         .accessToken(accessToken)
         .refreshToken(refreshToken)
         .build();

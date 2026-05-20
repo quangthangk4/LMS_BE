@@ -13,7 +13,6 @@ import com.library.shared.dto.ApiResponseApp;
 import com.library.shared.dto.PageResponse;
 import com.library.shared.util.RequiresAuthentication;
 import com.library.shared.util.RequiresRole;
-import com.library.shared.util.SecurityEvaluator;
 import io.swagger.v3.oas.annotations.Operation;
 import java.util.Map;
 import lombok.RequiredArgsConstructor;
@@ -40,7 +39,7 @@ public class FineController {
     private final PayFineUseCase payFineUseCase;
     private final PayAllFinesUseCase payAllFinesUseCase;
     private final FinePaymentService finePaymentService;
-    private final SecurityEvaluator security;
+    private final com.library.shared.util.SecurityEvaluator security;
 
     @GetMapping("/student")
     @RequiresRole(RoleConstants.LIBRARIAN)
@@ -55,7 +54,7 @@ public class FineController {
     @Operation(summary = "Mark a fine as paid (librarian)")
     public ApiResponseApp<FineResponse> payFine(
         @PathVariable("id") Long fineId) {
-        return ApiResponseApp.success(payFineUseCase.execute(fineId));
+        return ApiResponseApp.success(payFineUseCase.execute(fineId, security.getCurrentUserId()));
     }
 
     @PutMapping("/pay-all")
@@ -63,7 +62,7 @@ public class FineController {
     @Operation(summary = "Mark all UNPAID fines of a student as paid (librarian)")
     public ApiResponseApp<Map<String, Integer>> payAllFines(
         @RequestParam(name = "studentId") String studentId) {
-        int count = payAllFinesUseCase.execute(studentId);
+        int count = payAllFinesUseCase.execute(studentId, security.getCurrentUserId());
         return ApiResponseApp.success(Map.of("paidCount", count));
     }
 
@@ -72,7 +71,7 @@ public class FineController {
     @Operation(summary = "Mark all UNPAID fines of a student as paid by cash (librarian)")
     public ApiResponseApp<Map<String, Integer>> payAllFinesByCash(
         @RequestParam(name = "studentId") String studentId) {
-        int count = payAllFinesUseCase.execute(studentId);
+        int count = payAllFinesUseCase.execute(studentId, security.getCurrentUserId());
         return ApiResponseApp.success("Cash payment recorded", Map.of("paidCount", count));
     }
 
@@ -82,7 +81,7 @@ public class FineController {
     public ApiResponseApp<FinePaymentLinkResponse> createPayOsFinePayment(
         @RequestParam(name = "studentId") String studentId) {
         return ApiResponseApp.success("payOS payment link created",
-            finePaymentService.createPayOsPaymentLink(studentId));
+            finePaymentService.createPayOsPaymentLink(studentId, security.getCurrentUserId()));
     }
 
     @PostMapping("/payments/payos/{orderCode}/sync")
@@ -90,7 +89,7 @@ public class FineController {
     @Operation(summary = "Sync payOS payment status for a fine payment order")
     public ApiResponseApp<Map<String, Integer>> syncPayOsFinePayment(
         @PathVariable("orderCode") Long orderCode) {
-        int paidCount = finePaymentService.syncPayOsPayment(orderCode);
+        int paidCount = finePaymentService.syncPayOsPayment(orderCode, security.getCurrentUserId());
         return ApiResponseApp.success(Map.of("paidCount", paidCount));
     }
 

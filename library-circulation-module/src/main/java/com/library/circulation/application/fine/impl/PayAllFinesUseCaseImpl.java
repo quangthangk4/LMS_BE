@@ -1,6 +1,7 @@
 package com.library.circulation.application.fine.impl;
 
 import com.library.circulation.application.fine.PayAllFinesUseCase;
+import com.library.shared.constant.RoleConstants;
 import com.library.shared.kafka.KafkaTopics;
 import com.library.shared.kafka.event.NotificationMessage;
 import java.util.List;
@@ -30,7 +31,8 @@ public class PayAllFinesUseCaseImpl implements PayAllFinesUseCase {
     private static final String PAY_ALL_SQL = """
         UPDATE fines
         SET payment_status = 'PAID',
-            paid_date      = NOW()
+            paid_date      = NOW(),
+            paid_by_librarian_id = :librarianId
         WHERE payment_status = 'UNPAID'
           AND transaction_id IN (
               SELECT t.id FROM borrowing_transactions t
@@ -41,10 +43,11 @@ public class PayAllFinesUseCaseImpl implements PayAllFinesUseCase {
 
     private final NamedParameterJdbcTemplate jdbcTemplate;
     private final KafkaTemplate<String, Object> kafkaTemplate;
+    private final com.library.shared.service.AuditLogService auditLogService;
 
     @Override
     @Transactional
-    public int execute(String studentId) {
+    public int execute(String studentId, Long librarianId) {
         List<Map<String, Object>> rows = jdbcTemplate.queryForList(
             GET_USER_AND_COUNT_SQL, Map.of("studentId", studentId.trim()));
 
@@ -53,7 +56,10 @@ public class PayAllFinesUseCaseImpl implements PayAllFinesUseCase {
         Long userId    = ((Number) rows.get(0).get("user_id")).longValue();
         long fineCount = ((Number) rows.get(0).get("fine_count")).longValue();
 
-        int updated = jdbcTemplate.update(PAY_ALL_SQL, Map.of("studentId", studentId.trim()));
+        int updated = jdbcTemplate.update(PAY_ALL_SQL, Map.of(
+            "studentId", studentId.trim(),
+            "librarianId", librarianId
+        ));
         log.info("Paid all fines for studentId={}, count={}", studentId, updated);
 
         kafkaTemplate.send(KafkaTopics.NOTIFICATION_SEND, new NotificationMessage(
@@ -62,6 +68,16 @@ public class PayAllFinesUseCaseImpl implements PayAllFinesUseCase {
             String.format("Bạn đã hoàn tất thanh toán %d khoản phí phạt.", fineCount),
             null, null
         ));
+
+        auditLogService.log(
+            librarianId,
+            RoleConstants.LIBRARIAN,
+            "PAY_ALL_FINES",
+            "fines",
+            studentId.trim(),
+            "Librarian marked all unpaid fines as paid",
+            Map.of("studentId", studentId.trim(), "paidCount", updated)
+        );
 
         return updated;
     }

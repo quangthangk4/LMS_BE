@@ -5,7 +5,6 @@ import com.library.catalog.dto.response.publication.DocumentUploadUrlResponse;
 import com.library.catalog.infrastructure.persistence.repository.PublicationJpaRepository;
 import com.library.shared.exception.AppException;
 import com.library.shared.exception.ErrorCode;
-import com.library.shared.port.StoragePort;
 import java.util.UUID;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -19,7 +18,7 @@ public class GetDocumentUploadUrlUseCaseImpl implements GetDocumentUploadUrlUseC
     private static final long PRESIGNED_URL_TTL_SECONDS = 900; // 15 phút
 
     private final PublicationJpaRepository publicationRepository;
-    private final StoragePort storagePort;
+    private final com.library.shared.port.StoragePort storagePort;
 
     @Override
     public DocumentUploadUrlResponse execute(Long publicationId, String filename) {

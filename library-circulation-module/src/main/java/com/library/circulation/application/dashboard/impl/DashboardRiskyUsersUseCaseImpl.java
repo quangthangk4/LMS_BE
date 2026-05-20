@@ -2,7 +2,6 @@ package com.library.circulation.application.dashboard.impl;
 
 import com.library.circulation.application.dashboard.DashboardRiskyUsersUseCase;
 import com.library.circulation.dto.response.RiskyUserResponse;
-import com.library.shared.dto.PageResponse;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
@@ -68,7 +67,7 @@ public class DashboardRiskyUsersUseCaseImpl implements DashboardRiskyUsersUseCas
 
   @Override
   @Transactional(readOnly = true)
-  public PageResponse<RiskyUserResponse> execute(int page, int size, String sortBy,
+  public com.library.shared.dto.PageResponse<RiskyUserResponse> execute(int page, int size, String sortBy,
       String sortDir) {
     String safeSort = ALLOWED_SORT_COLUMNS.contains(sortBy) ? sortBy : "creditScore";
     String safeDir = "DESC".equalsIgnoreCase(sortDir) ? "DESC" : "ASC";
@@ -101,7 +100,7 @@ public class DashboardRiskyUsersUseCaseImpl implements DashboardRiskyUsersUseCas
     long totalElements = jdbcTemplate.queryForObject(COUNT_SQL, Map.of(), Long.class);
     int totalPages = (int) Math.ceil((double) totalElements / size);
 
-    return PageResponse.<RiskyUserResponse>builder()
+    return com.library.shared.dto.PageResponse.<RiskyUserResponse>builder()
         .content(content)
         .currentPage(page)
         .pageSize(size)

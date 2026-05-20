@@ -1,6 +1,7 @@
 package com.library.circulation.application.transaction.impl;
 
 import com.library.catalog.domain.valueobject.ItemId;
+import com.library.circulation.application.policy.CirculationPolicyService;
 import com.library.circulation.application.transaction.ReportIssueUseCase;
 import com.library.circulation.domain.entities.BorrowingTransaction;
 import com.library.circulation.domain.valueobject.TransactionId;
@@ -15,8 +16,6 @@ import com.library.shared.exception.AppException;
 import com.library.shared.exception.ErrorCode;
 import com.library.shared.kafka.KafkaTopics;
 import com.library.shared.kafka.event.NotificationMessage;
-import com.library.shared.port.ItemSnapshot;
-import com.library.shared.port.ItemStatusPort;
 import com.library.shared.util.TsIdGenerator;
 import com.library.user.domain.enums.ViolationType;
 import com.library.user.domain.valueobject.UserId;
@@ -39,12 +38,11 @@ import org.springframework.transaction.annotation.Transactional;
 public class ReportIssueUseCaseImpl implements ReportIssueUseCase {
 
     private static final ZoneId ZONE = ZoneId.of("Asia/Ho_Chi_Minh");
-    private static final BigDecimal OVERDUE_FINE_PER_DAY = BigDecimal.valueOf(1_000);
-
-    private final ItemStatusPort itemStatusPort;
+    private final com.library.shared.port.ItemStatusPort itemStatusPort;
     private final BorrowingTransactionJpaRepository transactionJpaRepository;
     private final FineJpaRepository fineJpaRepository;
     private final KafkaTemplate<String, Object> kafkaTemplate;
+    private final CirculationPolicyService policyService;
 
     @Override
     @Transactional
@@ -59,7 +57,7 @@ public class ReportIssueUseCaseImpl implements ReportIssueUseCase {
             .orElseThrow(() -> new AppException(ErrorCode.TRANSACTION_NOT_FOUND));
 
         // 2. Lock item
-        ItemSnapshot item = itemStatusPort.lockAndGet(entity.getItemId());
+        com.library.shared.port.ItemSnapshot item = itemStatusPort.lockAndGet(entity.getItemId());
 
         // 3. Domain: processReturn
         BorrowingTransaction transaction = toDomain(entity);
@@ -94,7 +92,8 @@ public class ReportIssueUseCaseImpl implements ReportIssueUseCase {
         // Additional overdue fine if also past due date
         if (transaction.isOverdue(today)) {
             long daysLate = ChronoUnit.DAYS.between(transaction.getDueDate(), today);
-            BigDecimal overdueFineAmount = OVERDUE_FINE_PER_DAY.multiply(BigDecimal.valueOf(daysLate));
+            BigDecimal overdueFineAmount = policyService.getPolicy().overdueFinePerDay()
+                .multiply(BigDecimal.valueOf(daysLate));
             FineEntity overdueFine = FineEntity.builder()
                 .transactionId(transactionId)
                 .fineAmount(overdueFineAmount)

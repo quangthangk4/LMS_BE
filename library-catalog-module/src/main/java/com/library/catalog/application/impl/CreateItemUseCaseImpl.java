@@ -2,7 +2,6 @@ package com.library.catalog.application.impl;
 
 import com.library.catalog.application.CreateItemUseCase;
 import com.library.catalog.domain.entities.ItemStatus;
-import com.library.catalog.dto.request.item.CreateItemRequest;
 import com.library.catalog.infrastructure.persistence.entity.ItemEntity;
 import com.library.catalog.infrastructure.persistence.repository.ItemJpaRepository;
 import com.library.catalog.infrastructure.persistence.repository.PublicationJpaRepository;
@@ -22,7 +21,7 @@ public class CreateItemUseCaseImpl implements CreateItemUseCase {
 
     @Override
     @Transactional
-    public void execute(CreateItemRequest request) {
+    public void execute(com.library.catalog.dto.request.item.CreateItemRequest request) {
         if (request.getPublicationId() == null) {
             throw new IllegalArgumentException("Publication ID is required");
         }
