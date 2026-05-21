@@ -66,7 +66,7 @@ public class PayAllFinesUseCaseImpl implements PayAllFinesUseCase {
             userId, "FINE_PAID",
             "Phí phạt đã được thanh toán",
             String.format("Bạn đã hoàn tất thanh toán %d khoản phí phạt.", fineCount),
-            null, null
+            "/userpage/fines", null
         ));
 
         auditLogService.log(

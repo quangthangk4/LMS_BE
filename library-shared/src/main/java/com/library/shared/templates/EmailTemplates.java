@@ -1,218 +1,183 @@
 package com.library.shared.templates;
 
+import java.util.Arrays;
 import lombok.Getter;
+import org.springframework.web.util.HtmlUtils;
 
 @Getter
 public enum EmailTemplates {
+  // args: fullName, actionUrl, actionUrl, actionUrl
   VERIFY_EMAIL_TEMPLATE(
-      "[Thư viện HCMUT] Xác nhận địa chỉ email của bạn",
+      "[SmartLibrary] Xác nhận địa chỉ email của bạn",
       """
+          <!doctype html>
           <html>
-          <head>
-              <style>
-                  body {
-                      font-family: Arial, sans-serif;
-                      background-color: #f4f4f4;
-                      padding: 20px;
-                  }
-                  .container {
-                      max-width: 600px;
-                      margin: 0 auto;
-                      background-color: #ffffff;
-                      padding: 30px;
-                      border-radius: 10px;
-                      box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
-                      text-align: center;
-                  }
-                  h1 {
-                      color: #333333;
-                  }
-                  p {
-                      font-size: 16px;
-                      color: #555555;
-                  }
-                  .verify-button {
-                      display: inline-block;
-                      margin-top: 20px;
-                      padding: 12px 24px;
-                      background-color: #007bff;
-                      color: #ffffff !important;
-                      text-decoration: none;
-                      font-weight: bold;
-                      border-radius: 5px;
-                      font-size: 16px;
-                  }
-                  .verify-button:hover {
-                      background-color: #0056b3;
-                  }
-              </style>
-          </head>
-          <body>
-              <div class="container">
-                  <p>Xin chào <b>%s</b>,</p>
-                  <p>Chào mừng bạn đến với hệ thống Thư viện Trực tuyến HCMUT.</p>
-                  <p>Để hoàn tất đăng ký và kích hoạt tài khoản, vui lòng xác nhận địa chỉ email bằng cách nhấn vào nút bên dưới:</p>
-                  <a class="verify-button" href="%s">Xác nhận email</a>
-                  <p style="margin-top: 20px; font-size: 14px; color: #888888;">
-                  Nếu nút trên không hoạt động, bạn có thể copy và dán đường dẫn sau vào trình duyệt:
-                  <br/>
-                  <a href="%s" style="color: #007bff; word-break: break-all;">%s</a>
+          <body style="margin:0;background:#f3f4f6;font-family:Arial,Helvetica,sans-serif;color:#111827;">
+            <div style="max-width:640px;margin:0 auto;padding:28px 16px;">
+              <div style="background:#ffffff;border:1px solid #e5e7eb;border-radius:12px;overflow:hidden;">
+                <div style="background:#5b5ce2;padding:22px 28px;color:#ffffff;">
+                  <div style="font-size:13px;letter-spacing:.08em;text-transform:uppercase;opacity:.9;">SmartLibrary HCMUT</div>
+                  <h1 style="margin:8px 0 0;font-size:24px;line-height:1.3;">Xác nhận tài khoản thư viện</h1>
+                </div>
+                <div style="padding:28px;">
+                  <p style="margin:0 0 14px;font-size:16px;line-height:1.6;">Xin chào <strong>%s</strong>,</p>
+                  <p style="margin:0 0 18px;font-size:15px;line-height:1.7;color:#374151;">
+                    Cảm ơn bạn đã đăng ký SmartLibrary. Vui lòng xác nhận email để kích hoạt tài khoản và bắt đầu sử dụng các chức năng mượn sách, đặt trước, thông báo và gợi ý tài liệu.
                   </p>
-                  <p style="font-size: 14px;">
-                  Đường dẫn có hiệu lực trong <b>24 giờ</b> kể từ khi nhận được email này.
+                  <p style="margin:24px 0;text-align:center;">
+                    <a href="%s" style="display:inline-block;background:#5b5ce2;color:#ffffff;text-decoration:none;font-weight:700;padding:13px 24px;border-radius:8px;">Xác nhận email</a>
                   </p>
-                  <hr style="border: none; border-top: 1px solid #eeeeee; margin: 20px 0;" />
-                  <p style="font-size: 12px; color: #aaaaaa;">
-                  Nếu bạn không thực hiện yêu cầu này, vui lòng bỏ qua email hoặc liên hệ bộ phận hỗ trợ nếu cần thiết.
+                  <p style="margin:0 0 10px;font-size:14px;line-height:1.6;color:#6b7280;">Liên kết có hiệu lực trong 24 giờ. Nếu nút không hoạt động, hãy copy đường dẫn sau:</p>
+                  <p style="margin:0;background:#f9fafb;border:1px solid #e5e7eb;border-radius:8px;padding:12px;font-size:13px;line-height:1.5;word-break:break-all;">
+                    <a href="%s" style="color:#5b5ce2;">%s</a>
                   </p>
+                </div>
+                <div style="padding:18px 28px;background:#f9fafb;border-top:1px solid #e5e7eb;color:#6b7280;font-size:12px;line-height:1.6;">
+                  Nếu bạn không tạo tài khoản này, vui lòng bỏ qua email. Không chia sẻ email này cho người khác.
+                </div>
               </div>
+            </div>
           </body>
           </html>
           """
   ),
+
+  // args: fullName, actionUrl, actionUrl, actionUrl
   VERIFY_RESET_PASSWORD_TEMPLATE(
-      "Xác nhận lấy lại mật khẩu và mở khóa tài khoản của bạn",
+      "[SmartLibrary] Đặt lại mật khẩu tài khoản",
       """
+          <!doctype html>
           <html>
-          <head>
-              <style>
-                  body {
-                      font-family: Arial, sans-serif;
-                      background-color: #f4f4f4;
-                      padding: 20px;
-                  }
-                  .container {
-                      max-width: 600px;
-                      margin: 0 auto;
-                      background-color: #ffffff;
-                      padding: 30px;
-                      border-radius: 10px;
-                      box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
-                      text-align: center;
-                  }
-                  h1 {
-                      color: #333333;
-                  }
-                  p {
-                      font-size: 16px;
-                      color: #555555;
-                  }
-                  .verify-button {
-                      display: inline-block;
-                      margin-top: 20px;
-                      padding: 12px 24px;
-                      background-color: #007bff;
-                      color: #ffffff !important;
-                      text-decoration: none;
-                      font-weight: bold;
-                      border-radius: 5px;
-                      font-size: 16px;
-                  }
-                  .verify-button:hover {
-                      background-color: #0056b3;
-                      color: #ffffff;
-                  }
-              </style>
-          </head>
-          <body>
-              <div class="container">
-                 <p>Xin chào <b>%s</b>,</p>
-                 <p>Bạn đã yêu cầu đặt lại mật khẩu. Nhấn nút bên dưới để tiếp tục:</p>
-                 <a class="verify-button" href="%s">Đặt lại mật khẩu</a>
-                 <p style="margin-top: 15px;">
-                 Hoặc copy link sau vào trình duyệt:
-                 <br/>
-                 <a href="%s">%s</a>
-                 </p>
-                 <p style="font-size: 14px;">
-                 Link có hiệu lực trong <b>30 phút</b>.
-                 </p>
-                 <p style="font-size: 14px; color: #b00020;">
-                 Nếu bạn không thực hiện yêu cầu này, vui lòng bỏ qua email hoặc kiểm tra bảo mật tài khoản.
-                 </p>
+          <body style="margin:0;background:#f3f4f6;font-family:Arial,Helvetica,sans-serif;color:#111827;">
+            <div style="max-width:640px;margin:0 auto;padding:28px 16px;">
+              <div style="background:#ffffff;border:1px solid #e5e7eb;border-radius:12px;overflow:hidden;">
+                <div style="background:#5b5ce2;padding:22px 28px;color:#ffffff;">
+                  <div style="font-size:13px;letter-spacing:.08em;text-transform:uppercase;opacity:.9;">SmartLibrary HCMUT</div>
+                  <h1 style="margin:8px 0 0;font-size:24px;line-height:1.3;">Yêu cầu đặt lại mật khẩu</h1>
+                </div>
+                <div style="padding:28px;">
+                  <p style="margin:0 0 14px;font-size:16px;line-height:1.6;">Xin chào <strong>%s</strong>,</p>
+                  <p style="margin:0 0 18px;font-size:15px;line-height:1.7;color:#374151;">
+                    SmartLibrary nhận được yêu cầu đặt lại mật khẩu cho tài khoản của bạn. Nhấn nút bên dưới để tạo mật khẩu mới.
+                  </p>
+                  <p style="margin:24px 0;text-align:center;">
+                    <a href="%s" style="display:inline-block;background:#5b5ce2;color:#ffffff;text-decoration:none;font-weight:700;padding:13px 24px;border-radius:8px;">Đặt lại mật khẩu</a>
+                  </p>
+                  <p style="margin:0 0 10px;font-size:14px;line-height:1.6;color:#6b7280;">Liên kết có hiệu lực trong 30 phút. Nếu nút không hoạt động, hãy copy đường dẫn sau:</p>
+                  <p style="margin:0;background:#f9fafb;border:1px solid #e5e7eb;border-radius:8px;padding:12px;font-size:13px;line-height:1.5;word-break:break-all;">
+                    <a href="%s" style="color:#5b5ce2;">%s</a>
+                  </p>
+                </div>
+                <div style="padding:18px 28px;background:#fef2f2;border-top:1px solid #fee2e2;color:#991b1b;font-size:12px;line-height:1.6;">
+                  Nếu bạn không yêu cầu đặt lại mật khẩu, hãy bỏ qua email này và kiểm tra bảo mật tài khoản.
+                </div>
               </div>
+            </div>
           </body>
           </html>
           """
   ),
 
-  // args: fullName, publicationTitle, location, deadline
+  // args: fullName, publicationTitle, location, deadline, actionUrl, actionUrl
   BORROW_PICKUP_REMINDER(
-      "[Thư viện HCMUT] Nhắc nhở lấy sách",
+      "[SmartLibrary] Sách của bạn đang chờ được lấy",
       """
-          <html><body style="font-family:Arial,sans-serif;background:#f4f4f4;padding:20px;">
-          <div style="max-width:600px;margin:0 auto;background:#fff;padding:30px;border-radius:10px;box-shadow:0 2px 8px rgba(0,0,0,.1)">
-              <h2 style="color:#007bff;">📚 Sách của bạn đang chờ được lấy</h2>
-              <p>Xin chào <b>%s</b>,</p>
-              <p>Yêu cầu mượn sách <b>"%s"</b> của bạn đã được tạo thành công.</p>
-              <p>Vui lòng đến <b>%s</b> để nhận sách trước:</p>
-              <p style="font-size:18px;font-weight:bold;color:#d32f2f;">⏰ %s</p>
-              <p style="color:#888;font-size:13px;">Quá thời hạn trên, yêu cầu mượn sách sẽ bị tự động hủy.</p>
-          </div>
-          </body></html>
+          <!doctype html>
+          <html>
+          <body style="margin:0;background:#f3f4f6;font-family:Arial,Helvetica,sans-serif;color:#111827;">
+            <div style="max-width:640px;margin:0 auto;padding:28px 16px;">
+              <div style="background:#ffffff;border:1px solid #e5e7eb;border-radius:12px;overflow:hidden;">
+                <div style="background:#5b5ce2;padding:22px 28px;color:#ffffff;">
+                  <div style="font-size:13px;letter-spacing:.08em;text-transform:uppercase;opacity:.9;">SmartLibrary HCMUT</div>
+                  <h1 style="margin:8px 0 0;font-size:24px;line-height:1.3;">Yêu cầu mượn sách đã sẵn sàng</h1>
+                </div>
+                <div style="padding:28px;">
+                  <p style="margin:0 0 14px;font-size:16px;line-height:1.6;">Xin chào <strong>%s</strong>,</p>
+                  <p style="margin:0 0 18px;font-size:15px;line-height:1.7;color:#374151;">Yêu cầu mượn sách <strong>"%s"</strong> đã được ghi nhận. Vui lòng đến thư viện nhận sách trước thời hạn.</p>
+                  <table style="width:100%%;border-collapse:collapse;margin:20px 0;background:#f9fafb;border:1px solid #e5e7eb;border-radius:8px;overflow:hidden;">
+                    <tr><td style="padding:12px;color:#6b7280;width:34%%;">Địa điểm</td><td style="padding:12px;font-weight:700;">%s</td></tr>
+                    <tr><td style="padding:12px;color:#6b7280;border-top:1px solid #e5e7eb;">Hạn nhận sách</td><td style="padding:12px;border-top:1px solid #e5e7eb;font-weight:700;color:#b91c1c;">%s</td></tr>
+                  </table>
+                  <p style="margin:24px 0;text-align:center;"><a href="%s" style="display:inline-block;background:#5b5ce2;color:#ffffff;text-decoration:none;font-weight:700;padding:13px 24px;border-radius:8px;">Xem sách đang chờ nhận</a></p>
+                  <p style="margin:0;font-size:13px;color:#6b7280;line-height:1.6;">Nếu quá hạn, yêu cầu mượn có thể bị tự động hủy.</p>
+                </div>
+              </div>
+            </div>
+          </body>
+          </html>
           """
   ),
 
-  // args: fullName, publicationTitle, dueDate
+  // args: fullName, publicationTitle, dueDate, actionUrl, actionUrl
   DUE_DATE_WARNING(
-      "[Thư viện HCMUT] Nhắc nhở trả sách",
+      "[SmartLibrary] Nhắc nhở hạn trả sách",
       """
-          <html><body style="font-family:Arial,sans-serif;background:#f4f4f4;padding:20px;">
-          <div style="max-width:600px;margin:0 auto;background:#fff;padding:30px;border-radius:10px;box-shadow:0 2px 8px rgba(0,0,0,.1)">
-              <h2 style="color:#ff9800;">⚠️ Sách sắp đến hạn trả</h2>
-              <p>Xin chào <b>%s</b>,</p>
-              <p>Sách <b>"%s"</b> của bạn sẽ đến hạn trả vào ngày <b>%s</b>.</p>
-              <p>Vui lòng trả sách đúng hạn để tránh phát sinh phí phạt.</p>
-              <p style="color:#888;font-size:13px;">Trân trọng, Thư viện HCMUT</p>
-          </div>
+          <!doctype html>
+          <html><body style="margin:0;background:#f3f4f6;font-family:Arial,Helvetica,sans-serif;color:#111827;">
+            <div style="max-width:640px;margin:0 auto;padding:28px 16px;"><div style="background:#ffffff;border:1px solid #e5e7eb;border-radius:12px;overflow:hidden;">
+              <div style="background:#7c3aed;padding:22px 28px;color:#ffffff;"><div style="font-size:13px;letter-spacing:.08em;text-transform:uppercase;opacity:.9;">SmartLibrary HCMUT</div><h1 style="margin:8px 0 0;font-size:24px;">Sách sắp đến hạn trả</h1></div>
+              <div style="padding:28px;">
+                <p style="margin:0 0 14px;font-size:16px;">Xin chào <strong>%s</strong>,</p>
+                <p style="margin:0 0 18px;font-size:15px;line-height:1.7;color:#374151;">Sách <strong>"%s"</strong> sẽ đến hạn trả vào <strong style="color:#7c3aed;">%s</strong>. Vui lòng trả sách đúng hạn để tránh phát sinh phí phạt.</p>
+                <p style="margin:24px 0;text-align:center;"><a href="%s" style="display:inline-block;background:#7c3aed;color:#ffffff;text-decoration:none;font-weight:700;padding:13px 24px;border-radius:8px;">Xem sách đang mượn</a></p>
+              </div>
+            </div></div>
           </body></html>
           """
   ),
 
-  // args: fullName, publicationTitle, returnDate
+  // args: fullName, publicationTitle, returnDate, actionUrl, actionUrl
   RETURN_CONFIRMED(
-      "[Thư viện HCMUT] Xác nhận trả sách",
+      "[SmartLibrary] Xác nhận trả sách thành công",
       """
-          <html><body style="font-family:Arial,sans-serif;background:#f4f4f4;padding:20px;">
-          <div style="max-width:600px;margin:0 auto;background:#fff;padding:30px;border-radius:10px;box-shadow:0 2px 8px rgba(0,0,0,.1)">
-              <h2 style="color:#4caf50;">✅ Trả sách thành công</h2>
-              <p>Xin chào <b>%s</b>,</p>
-              <p>Bạn đã trả sách <b>"%s"</b> thành công vào ngày <b>%s</b>.</p>
-              <p>Cảm ơn bạn đã sử dụng dịch vụ thư viện HCMUT.</p>
-          </div>
+          <!doctype html>
+          <html><body style="margin:0;background:#f3f4f6;font-family:Arial,Helvetica,sans-serif;color:#111827;">
+            <div style="max-width:640px;margin:0 auto;padding:28px 16px;"><div style="background:#ffffff;border:1px solid #e5e7eb;border-radius:12px;overflow:hidden;">
+              <div style="background:#5b5ce2;padding:22px 28px;color:#ffffff;"><div style="font-size:13px;letter-spacing:.08em;text-transform:uppercase;opacity:.9;">SmartLibrary HCMUT</div><h1 style="margin:8px 0 0;font-size:24px;">Trả sách thành công</h1></div>
+              <div style="padding:28px;">
+                <p style="margin:0 0 14px;font-size:16px;">Xin chào <strong>%s</strong>,</p>
+                <p style="margin:0 0 18px;font-size:15px;line-height:1.7;color:#374151;">Bạn đã trả sách <strong>"%s"</strong> thành công vào ngày <strong>%s</strong>.</p>
+                <p style="margin:0 0 18px;font-size:15px;line-height:1.7;color:#374151;">Nếu có thời gian, hãy đánh giá tài liệu để giúp các bạn đọc khác chọn sách tốt hơn.</p>
+                <p style="margin:24px 0;text-align:center;"><a href="%s" style="display:inline-block;background:#5b5ce2;color:#ffffff;text-decoration:none;font-weight:700;padding:13px 24px;border-radius:8px;">Đánh giá tài liệu</a></p>
+              </div>
+            </div></div>
           </body></html>
           """
   ),
 
-  // args: fullName, publicationTitle, deadline
+  // args: fullName, publicationTitle, deadline, actionUrl, actionUrl
   BOOK_AVAILABLE(
-      "[Thư viện HCMUT] Sách đặt trước đã sẵn sàng",
+      "[SmartLibrary] Sách đặt trước đã sẵn sàng",
       """
-          <html><body style="font-family:Arial,sans-serif;background:#f4f4f4;padding:20px;">
-          <div style="max-width:600px;margin:0 auto;background:#fff;padding:30px;border-radius:10px;box-shadow:0 2px 8px rgba(0,0,0,.1)">
-              <h2 style="color:#007bff;">📖 Sách đặt trước đã sẵn sàng để lấy</h2>
-              <p>Xin chào <b>%s</b>,</p>
-              <p>Sách <b>"%s"</b> bạn đã đặt trước hiện đã có sẵn tại thư viện.</p>
-              <p>Vui lòng đến lấy sách trước:</p>
-              <p style="font-size:18px;font-weight:bold;color:#d32f2f;">⏰ %s</p>
-              <p style="color:#888;font-size:13px;">Quá thời hạn trên, sách sẽ được chuyển cho người đặt trước tiếp theo.</p>
-              <p style="color:#888;font-size:13px;">Trân trọng, Thư viện HCMUT</p>
-          </div>
+          <!doctype html>
+          <html><body style="margin:0;background:#f3f4f6;font-family:Arial,Helvetica,sans-serif;color:#111827;">
+            <div style="max-width:640px;margin:0 auto;padding:28px 16px;"><div style="background:#ffffff;border:1px solid #e5e7eb;border-radius:12px;overflow:hidden;">
+              <div style="background:#5b5ce2;padding:22px 28px;color:#ffffff;"><div style="font-size:13px;letter-spacing:.08em;text-transform:uppercase;opacity:.9;">SmartLibrary HCMUT</div><h1 style="margin:8px 0 0;font-size:24px;">Sách đặt trước đã có sẵn</h1></div>
+              <div style="padding:28px;">
+                <p style="margin:0 0 14px;font-size:16px;">Xin chào <strong>%s</strong>,</p>
+                <p style="margin:0 0 18px;font-size:15px;line-height:1.7;color:#374151;">Sách <strong>"%s"</strong> bạn đặt trước hiện đã sẵn sàng tại thư viện.</p>
+                <p style="margin:0 0 18px;font-size:15px;line-height:1.7;color:#374151;">Vui lòng đến nhận trước <strong style="color:#b91c1c;">%s</strong>. Nếu quá hạn, lượt giữ sách có thể chuyển cho bạn đọc tiếp theo.</p>
+                <p style="margin:24px 0;text-align:center;"><a href="%s" style="display:inline-block;background:#5b5ce2;color:#ffffff;text-decoration:none;font-weight:700;padding:13px 24px;border-radius:8px;">Xem đặt trước của tôi</a></p>
+              </div>
+            </div></div>
           </body></html>
           """
   ),
 
-  // args: fullName, fineAmount, publicationTitle
+  // args: fullName, fineAmount, publicationTitle, actionUrl, actionUrl
   FINE_PAID(
-      "[Thư viện HCMUT] Xác nhận thanh toán phí phạt",
+      "[SmartLibrary] Xác nhận thanh toán phí phạt",
       """
-          <html><body style="font-family:Arial,sans-serif;background:#f4f4f4;padding:20px;">
-          <div style="max-width:600px;margin:0 auto;background:#fff;padding:30px;border-radius:10px;box-shadow:0 2px 8px rgba(0,0,0,.1)">
-              <h2 style="color:#4caf50;">✅ Thanh toán phí phạt thành công</h2>
-              <p>Xin chào <b>%s</b>,</p>
-              <p>Phí phạt <b>%s VNĐ</b> liên quan đến sách <b>"%s"</b> đã được thanh toán.</p>
-              <p>Cảm ơn bạn, Thư viện HCMUT.</p>
-          </div>
+          <!doctype html>
+          <html><body style="margin:0;background:#f3f4f6;font-family:Arial,Helvetica,sans-serif;color:#111827;">
+            <div style="max-width:640px;margin:0 auto;padding:28px 16px;"><div style="background:#ffffff;border:1px solid #e5e7eb;border-radius:12px;overflow:hidden;">
+              <div style="background:#5b5ce2;padding:22px 28px;color:#ffffff;"><div style="font-size:13px;letter-spacing:.08em;text-transform:uppercase;opacity:.9;">SmartLibrary HCMUT</div><h1 style="margin:8px 0 0;font-size:24px;">Thanh toán phí phạt thành công</h1></div>
+              <div style="padding:28px;">
+                <p style="margin:0 0 14px;font-size:16px;">Xin chào <strong>%s</strong>,</p>
+                <p style="margin:0 0 18px;font-size:15px;line-height:1.7;color:#374151;">Khoản phí <strong>%s</strong> liên quan đến sách <strong>"%s"</strong> đã được ghi nhận thanh toán.</p>
+                <p style="margin:24px 0;text-align:center;"><a href="%s" style="display:inline-block;background:#5b5ce2;color:#ffffff;text-decoration:none;font-weight:700;padding:13px 24px;border-radius:8px;">Xem phí phạt của tôi</a></p>
+              </div>
+            </div></div>
           </body></html>
           """
   );
@@ -220,15 +185,15 @@ public enum EmailTemplates {
   private final String subject;
   private final String content;
 
-
   EmailTemplates(String subject, String content) {
     this.subject = subject;
     this.content = content;
   }
 
   public String formatContent(Object... args) {
-    return String.format(this.content, args);
+    Object[] escapedArgs = Arrays.stream(args)
+        .map(arg -> HtmlUtils.htmlEscape(arg == null ? "" : arg.toString()))
+        .toArray();
+    return String.format(this.content, escapedArgs);
   }
 }
-
-

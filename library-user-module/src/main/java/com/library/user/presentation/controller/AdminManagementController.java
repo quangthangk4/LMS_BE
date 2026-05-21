@@ -6,6 +6,8 @@ import com.library.shared.constant.RoleConstants;
 import com.library.shared.util.RequiresRole;
 import com.library.shared.util.TsIdGenerator;
 import com.library.user.domain.entities.UserStatus;
+import com.library.user.domain.enums.FacultyEnum;
+import com.library.user.application.dto.request.AdminUpdateUserRequest;
 import com.library.user.infrastructure.persistence.entity.RoleEntity;
 import io.swagger.v3.oas.annotations.Operation;
 import jakarta.validation.Valid;
@@ -274,6 +276,104 @@ public class AdminManagementController {
         return com.library.shared.dto.ApiResponseApp.success("Account status updated", findAdminUserResponse(saved.getId()));
     }
 
+    @org.springframework.web.bind.annotation.PutMapping("/users/{userId}")
+    @RequiresRole(RoleConstants.ADMIN)
+    @Operation(summary = "Update managed student or librarian profile")
+    public com.library.shared.dto.ApiResponseApp<com.library.user.application.dto.response.AdminUserAccountResponse> updateManagedUser(
+        @PathVariable("userId") Long userId,
+        @RequestBody AdminUpdateUserRequest request) {
+        com.library.user.infrastructure.persistence.entity.UserEntity user = userRepository.findByIdWithRoles(userId)
+            .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "User not found"));
+
+        List<String> roles = user.getRoles().stream().map(RoleEntity::getRoleName).sorted().toList();
+        boolean isStudent = roles.contains(RoleConstants.STUDENT);
+        boolean isLibrarian = roles.contains(RoleConstants.LIBRARIAN);
+        if (!isStudent && !isLibrarian) {
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Only student and librarian accounts can be updated here");
+        }
+
+        String email = requiredTrim(request.email(), "Email is required").toLowerCase();
+        String fullName = requiredTrim(request.fullName(), "Full name is required");
+        String code = requiredTrim(request.studentId(), isLibrarian ? "Librarian code is required" : "Student ID is required");
+        String phoneNumber = trimToNull(request.phoneNumber());
+        String address = trimToNull(request.address());
+        String avatarUrl = trimToNull(request.profilePictureUrl());
+
+        Integer duplicateEmail = jdbcTemplate.queryForObject(
+            "SELECT COUNT(*) FROM users WHERE LOWER(email) = :email AND id <> :id",
+            new MapSqlParameterSource().addValue("email", email).addValue("id", userId),
+            Integer.class
+        );
+        if (duplicateEmail != null && duplicateEmail > 0) {
+            throw new ResponseStatusException(HttpStatus.CONFLICT, "Email already exists");
+        }
+
+        String roleForCode = isLibrarian ? RoleConstants.LIBRARIAN : RoleConstants.STUDENT;
+        Integer duplicateCode = jdbcTemplate.queryForObject(
+            """
+            SELECT COUNT(*)
+            FROM users u
+            JOIN user_roles ur ON ur.user_id = u.id
+            JOIN roles r ON r.id = ur.role_id
+            WHERE r.role_name = :role
+              AND u.student_id = :code
+              AND u.id <> :id
+            """,
+            new MapSqlParameterSource()
+                .addValue("role", roleForCode)
+                .addValue("code", code)
+                .addValue("id", userId),
+            Integer.class
+        );
+        if (duplicateCode != null && duplicateCode > 0) {
+            throw new ResponseStatusException(HttpStatus.CONFLICT, isLibrarian ? "Librarian code already exists" : "Student ID already exists");
+        }
+
+        FacultyEnum faculty = null;
+        if (isStudent) {
+            String rawFaculty = requiredTrim(request.faculty(), "Faculty is required for student accounts");
+            try {
+                faculty = FacultyEnum.valueOf(rawFaculty);
+            } catch (Exception e) {
+                throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Invalid faculty");
+            }
+        }
+
+        Map<String, Object> oldValues = Map.of(
+            "email", user.getEmail(),
+            "fullName", user.getFullName(),
+            "code", user.getStudentId() == null ? "" : user.getStudentId()
+        );
+
+        user.setEmail(email);
+        user.setFullName(fullName);
+        user.setStudentId(code);
+        user.setPhoneNumber(phoneNumber);
+        user.setAddress(address);
+        user.setProfilePictureUrl(avatarUrl);
+        user.setFaculty(faculty);
+        com.library.user.infrastructure.persistence.entity.UserEntity saved = userRepository.save(user);
+
+        Long adminId = security.getCurrentUserId();
+        auditLogService.log(
+            adminId,
+            RoleConstants.ADMIN,
+            "UPDATE_USER_PROFILE",
+            "users",
+            saved.getId(),
+            "Admin updated profile for " + saved.getEmail(),
+            Map.of(
+                "old", oldValues,
+                "newEmail", saved.getEmail(),
+                "newFullName", saved.getFullName(),
+                "newCode", saved.getStudentId(),
+                "roles", roles
+            )
+        );
+
+        return com.library.shared.dto.ApiResponseApp.success("Account profile updated", findAdminUserResponse(saved.getId()));
+    }
+
     @PatchMapping("/users/{userId}/verify")
     @RequiresRole(RoleConstants.ADMIN)
     @Operation(summary = "Verify a complete student or librarian account")
@@ -494,6 +594,18 @@ public class AdminManagementController {
         if (!hasText(value)) {
             throw new ResponseStatusException(HttpStatus.BAD_REQUEST, message);
         }
+    }
+
+    private String requiredTrim(String value, String message) {
+        requireText(value, message);
+        return value.trim();
+    }
+
+    private String trimToNull(String value) {
+        if (value == null || value.isBlank()) {
+            return null;
+        }
+        return value.trim();
     }
 
     private JsonNode toJsonNode(String rawJson) {

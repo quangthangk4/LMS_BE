@@ -21,9 +21,9 @@ spring:
       max-request-size: 100MB
 
   aws:
-    region: ap-southeast-1
+    region: ${AWS_REGION:ap-southeast-2}
     s3:
-      bucket: cnpmnc-document-storage-hk252
+      bucket: ${AWS_S3_BUCKET:}
     credentials:
       access-key: ${AWS_ACCESS_KEY:}
       secret-key: ${AWS_SECRET_KEY:}
@@ -46,7 +46,7 @@ spring:
     open-in-view: false
 
   kafka:
-    bootstrap-servers: localhost:9092
+    bootstrap-servers: ${KAFKA_BOOTSTRAP_SERVERS:localhost:9092}
     producer:
       key-serializer: org.apache.kafka.common.serialization.StringSerializer
       value-serializer: org.springframework.kafka.support.serializer.JsonSerializer

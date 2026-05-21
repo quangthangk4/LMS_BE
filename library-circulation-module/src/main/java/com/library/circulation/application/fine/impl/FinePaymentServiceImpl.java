@@ -272,7 +272,7 @@ public class FinePaymentServiceImpl implements FinePaymentService {
             "FINE_PAID",
             "Phí phạt đã được thanh toán",
             String.format(Locale.ROOT, "Bạn đã hoàn tất thanh toán %d khoản phí phạt qua chuyển khoản.", updated),
-            null,
+            "/userpage/fines",
             orderCode
         ));
         auditLogService.log(

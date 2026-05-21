@@ -5,6 +5,7 @@ import lombok.Getter;
 @Getter
 public enum FacultyTarget {
 
+    TOAN_BO_SINH_VIEN_BKU("Toàn bộ sinh viên BKU"),
     KHOA_KHOA_HOC_VA_KY_THUAT_MAY_TINH("Khoa Khoa học và Kỹ thuật Máy tính"),
     KHOA_DIEN_DIEN_TU("Khoa Điện - Điện tử"),
     KHOA_CO_KHI("Khoa Cơ khí"),

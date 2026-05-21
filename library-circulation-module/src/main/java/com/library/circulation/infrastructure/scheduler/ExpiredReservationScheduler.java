@@ -64,7 +64,7 @@ public class ExpiredReservationScheduler {
                 userId, "RESERVATION_EXPIRED",
                 "Đặt trước đã hết hạn",
                 String.format("Lượt đặt trước '%s' đã hết hạn do quá thời gian nhận sách.", title),
-                null, reservationId
+                "/userpage/reservations?highlight=" + reservationId, reservationId
             ));
 
             if (itemId != null) {

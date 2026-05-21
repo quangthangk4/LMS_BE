@@ -68,7 +68,7 @@ public class ConfirmPickupUseCaseImpl implements ConfirmPickupUseCase {
             String.format("Bạn đã nhận '%s'. Hạn trả: %s.",
                 item.publicationTitle(),
                 entity.getDueDate().format(DUE_DATE_FMT)),
-            null,
+            "/userpage/my-books?highlight=" + entity.getId(),
             entity.getId()
         ));
 

@@ -66,13 +66,17 @@ public class DueDateWarningScheduler {
                 userId, "OVERDUE_WARNING",
                 notifTitle,
                 String.format(notifBodyTemplate, title, dueDate),
-                null, transactionId
+                "/userpage/my-books?highlight=" + transactionId, transactionId
             ));
 
             kafkaTemplate.send(KafkaTopics.LIBRARY_EMAIL, new LibraryEmailMessage(
                 userId,
                 LibraryEmailMessage.DUE_DATE_WARNING,
-                Map.of("publicationTitle", title, "dueDate", dueDate)
+                Map.of(
+                    "publicationTitle", title,
+                    "dueDate", dueDate,
+                    "actionPath", "/userpage/my-books?highlight=" + transactionId
+                )
             ));
         }
 

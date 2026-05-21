@@ -77,14 +77,15 @@ public class PayFineUseCaseImpl implements PayFineUseCase {
             "Phí phạt đã được thanh toán",
             String.format("Phí phạt cho sách '%s' (%s) đã được ghi nhận thanh toán.", publicationTitle,
                 new java.text.DecimalFormat("#,###").format(fineAmount) + "đ"),
-            null, fineId
+            "/userpage/fines", fineId
         ));
 
         // Email
         kafkaTemplate.send(KafkaTopics.LIBRARY_EMAIL, new LibraryEmailMessage(
             userId, LibraryEmailMessage.FINE_PAID,
             Map.of("publicationTitle", publicationTitle,
-                   "fineAmount", new java.text.DecimalFormat("#,###").format(fineAmount) + "đ")
+                   "fineAmount", new java.text.DecimalFormat("#,###").format(fineAmount) + "đ",
+                   "actionPath", "/userpage/fines")
         ));
 
         auditLogService.log(

@@ -106,7 +106,7 @@ public class BorrowRequestUseCaseImpl implements BorrowRequestUseCase {
         "Yêu cầu mượn sách đã được tạo",
         String.format("Bạn đã đặt mượn '%s'. Đến %s để nhận sách trước %d giờ.",
             item.publicationTitle(), location, policy.pickupDeadlineHours()),
-        null, entity.getId()
+        "/userpage/my-books?highlight=" + entity.getId(), entity.getId()
     ));
 
     // Application: publish email notification
@@ -118,7 +118,8 @@ public class BorrowRequestUseCaseImpl implements BorrowRequestUseCase {
         java.util.Map.of(
             "publicationTitle", item.publicationTitle(),
             "location", location,
-            "deadline", formattedDeadline
+            "deadline", formattedDeadline,
+            "actionPath", "/userpage/my-books?highlight=" + entity.getId()
         )
     ));
 

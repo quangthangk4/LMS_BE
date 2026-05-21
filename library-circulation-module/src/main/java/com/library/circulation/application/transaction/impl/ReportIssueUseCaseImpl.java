@@ -117,7 +117,7 @@ public class ReportIssueUseCaseImpl implements ReportIssueUseCase {
             String.format("Sách '%s' đã được ghi nhận %s. Vui lòng đến thư viện thanh toán phí phạt.",
                 item.publicationTitle(),
                 command.type() == ViolationType.LOST_BOOK ? "mất/thất lạc" : "hư hỏng"),
-            null,
+            "/userpage/fines",
             issueFine.getId()
         ));
 

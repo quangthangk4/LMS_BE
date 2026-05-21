@@ -68,7 +68,7 @@ public class ExpiredPickupScheduler {
                 userId, "BORROW_CANCELLED_EXPIRED",
                 "Yêu cầu mượn sách đã bị hủy",
                 String.format("Yêu cầu mượn '%s' đã bị hủy do quá 24h không đến nhận.", title),
-                null, transactionId
+                "/userpage/my-books?highlight=" + transactionId, transactionId
             ));
 
             // Check if any reservation is waiting for this book

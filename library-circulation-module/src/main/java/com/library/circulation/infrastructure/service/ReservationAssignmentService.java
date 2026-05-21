@@ -82,13 +82,17 @@ public class ReservationAssignmentService {
             userId, "BOOK_AVAILABLE",
             "Sách đặt trước đã sẵn sàng",
             String.format("Sách \"%s\" đã có tại thư viện. Hãy đến nhận trước %s.", pubTitle, deadline),
-            null, reservationId
+            "/userpage/reservations?highlight=" + reservationId, reservationId
         ));
 
         kafkaTemplate.send(KafkaTopics.LIBRARY_EMAIL, new LibraryEmailMessage(
             userId,
             LibraryEmailMessage.BOOK_AVAILABLE,
-            Map.of("publicationTitle", pubTitle, "deadline", deadline)
+            Map.of(
+                "publicationTitle", pubTitle,
+                "deadline", deadline,
+                "actionPath", "/userpage/reservations?highlight=" + reservationId
+            )
         ));
 
         log.info("Reservation assigned: reservationId={}, itemId={}, userId={}", reservationId, itemId, userId);

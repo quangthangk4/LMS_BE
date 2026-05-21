@@ -13,8 +13,10 @@ import org.springframework.context.annotation.Primary;
 import org.springframework.stereotype.Service;
 import org.springframework.web.multipart.MultipartFile;
 import software.amazon.awssdk.core.sync.RequestBody;
+import software.amazon.awssdk.core.exception.SdkException;
 import software.amazon.awssdk.services.s3.S3Client;
 import software.amazon.awssdk.services.s3.model.PutObjectRequest;
+import software.amazon.awssdk.services.s3.model.S3Exception;
 import software.amazon.awssdk.services.s3.presigner.S3Presigner;
 import software.amazon.awssdk.services.s3.presigner.model.PresignedPutObjectRequest;
 import software.amazon.awssdk.services.s3.presigner.model.PutObjectPresignRequest;
@@ -55,6 +57,13 @@ public class S3StorageService implements StoragePort {
     } catch (IOException e) {
       log.error("S3 upload failed for key={}: {}", key, e.getMessage());
       throw new AppException(ErrorCode.FILE_UPLOAD_FAILED);
+    } catch (S3Exception e) {
+      log.error("S3 upload failed for bucket={}, key={}, status={}, awsCode={}, requestId={}",
+          bucket, key, e.statusCode(), e.awsErrorDetails().errorCode(), e.requestId());
+      throw new AppException(ErrorCode.FILE_UPLOAD_FAILED);
+    } catch (SdkException e) {
+      log.error("S3 upload failed for bucket={}, key={}: {}", bucket, key, e.getMessage());
+      throw new AppException(ErrorCode.FILE_UPLOAD_FAILED);
     }
 
     String url = String.format("https://%s.s3.%s.amazonaws.com/%s", bucket, region, key);
@@ -64,17 +73,23 @@ public class S3StorageService implements StoragePort {
 
   @Override
   public String generatePresignedPutUrl(String s3Key, long ttlSeconds) {
-    PutObjectPresignRequest presignRequest = PutObjectPresignRequest.builder()
-        .signatureDuration(Duration.ofSeconds(ttlSeconds))
-        .putObjectRequest(PutObjectRequest.builder()
-            .bucket(bucket)
-            .key(s3Key)
-            .build())
-        .build();
+    try {
+      PutObjectPresignRequest presignRequest = PutObjectPresignRequest.builder()
+          .signatureDuration(Duration.ofSeconds(ttlSeconds))
+          .putObjectRequest(PutObjectRequest.builder()
+              .bucket(bucket)
+              .key(s3Key)
+              .build())
+          .build();
 
-    PresignedPutObjectRequest presigned = s3Presigner.presignPutObject(presignRequest);
-    log.info("Generated presigned PUT URL for key={}, ttl={}s", s3Key, ttlSeconds);
-    return presigned.url().toString();
+      PresignedPutObjectRequest presigned = s3Presigner.presignPutObject(presignRequest);
+      log.info("Generated presigned PUT URL for key={}, ttl={}s", s3Key, ttlSeconds);
+      return presigned.url().toString();
+    } catch (SdkException e) {
+      log.error("Failed to generate presigned PUT URL for bucket={}, key={}: {}",
+          bucket, s3Key, e.getMessage());
+      throw new AppException(ErrorCode.FILE_UPLOAD_FAILED);
+    }
   }
 
   @Override

@@ -90,7 +90,7 @@ public class ConfirmReservationPickupUseCaseImpl implements ConfirmReservationPi
             String.format("Bạn đã nhận '%s' đặt trước. Hạn trả: %s.",
                 item.publicationTitle(),
                 dueDate.format(DUE_DATE_FMT)),
-            null,
+            "/userpage/my-books?highlight=" + transaction.getId(),
             transaction.getId()
         ));
 

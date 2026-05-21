@@ -34,7 +34,7 @@ public class EmailServiceImpl implements EmailService {
     } else {
       messageHelper.setTo(to);
     }
-    messageHelper.setFrom(from, "Library Management System");
+    messageHelper.setFrom(from, "SmartLibrary HCMUT");
     messageHelper.setSubject(emailTemplates.getSubject());
 
     String content = emailTemplates.formatContent(fullName, link, link, link);
@@ -49,7 +49,7 @@ public class EmailServiceImpl implements EmailService {
     MimeMessage mimeMessage = mailSender.createMimeMessage();
     MimeMessageHelper messageHelper = new MimeMessageHelper(mimeMessage, true, "UTF-8");
     messageHelper.setTo(to);
-    messageHelper.setFrom(from, "Library Management System");
+    messageHelper.setFrom(from, "SmartLibrary HCMUT");
     messageHelper.setSubject(template.getSubject());
     messageHelper.setText(template.formatContent(args), true);
     mailSender.send(mimeMessage);

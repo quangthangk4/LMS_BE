@@ -135,7 +135,7 @@ public class DirectBorrowUseCaseImpl implements DirectBorrowUseCase {
             "Sách đã được giao",
             String.format("Bạn đã mượn '%s' tại thư viện. Hạn trả: %s.",
                 item.publicationTitle(), dueDate.format(DUE_DATE_FMT)),
-            null,
+            "/userpage/my-books?highlight=" + entity.getId(),
             entity.getId()
         ));
 

@@ -50,6 +50,11 @@ public class SecurityConfig {
       "/webjars/**",
   };
 
+  public static final String[] ACTUATOR_ENDPOINTS = {
+      "/actuator/health",
+      "/actuator/info",
+  };
+
   public static final String[] WEBSOCKET_ENDPOINTS = {
       "/ws/**",
   };
@@ -71,6 +76,7 @@ public class SecurityConfig {
         session -> session.sessionCreationPolicy(SessionCreationPolicy.STATELESS));
     http.cors(cors -> cors.configurationSource(corsConfigurationSource()));
     http.authorizeHttpRequests(auth -> auth
+        .requestMatchers(ACTUATOR_ENDPOINTS).permitAll()
         .requestMatchers(SWAGGER_ENDPOINTS).permitAll()
         .requestMatchers(AUTH_ENDPOINTS).permitAll()
         .requestMatchers(WEBSOCKET_ENDPOINTS).permitAll()

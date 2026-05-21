@@ -135,7 +135,7 @@ public class CreateReservationUseCaseImpl implements CreateReservationUseCase {
             userId, "BOOK_RESERVED",
             "Đặt trước sách thành công",
             String.format("Bạn đang ở vị trí %d trong hàng chờ. Chúng tôi sẽ thông báo khi sách sẵn sàng.", queuePosition),
-            null, entity.getId()
+            "/userpage/reservations?highlight=" + entity.getId(), entity.getId()
         ));
 
         log.info("Reservation created: id={}, userId={}, publicationId={}, queue={}",

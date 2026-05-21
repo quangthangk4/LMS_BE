@@ -117,7 +117,11 @@ public class ReturnBookUseCaseImpl implements ReturnBookUseCase {
         kafkaTemplate.send(KafkaTopics.LIBRARY_EMAIL, new LibraryEmailMessage(
             entity.getUserId(),
             LibraryEmailMessage.RETURN_CONFIRMED,
-            Map.of("publicationTitle", item.publicationTitle(), "returnDate", returnedDate.toString())
+            Map.of(
+                "publicationTitle", item.publicationTitle(),
+                "returnDate", returnedDate.toString(),
+                "actionPath", String.format("/publicpage/book/%d?review=1", item.publicationId())
+            )
         ));
 
         log.info("Book returned: transactionId={}, itemId={}, overdue={}", transactionId, item.id(), overdue);
