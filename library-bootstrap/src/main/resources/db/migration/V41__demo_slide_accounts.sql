@@ -7,9 +7,9 @@ WITH demo_accounts AS (
         (910001::BIGINT, 'Nguyễn Minh User 1', 'user1@hcmut.edu.vn', '2250001', 'KHOA_KHOA_HOC_VA_KY_THUAT_MAY_TINH', NULL::VARCHAR, 'STUDENT', '0902000001', 'TP.HCM'),
         (910002::BIGINT, 'Trần Minh User 2', 'user2@hcmut.edu.vn', '2250002', 'KHOA_DIEN_DIEN_TU', NULL::VARCHAR, 'STUDENT', '0902000002', 'TP.HCM'),
         (910003::BIGINT, 'Lê Minh User 3', 'user3@hcmut.edu.vn', '2250003', 'KHOA_QUAN_LY_CONG_NGHIEP', NULL::VARCHAR, 'STUDENT', '0902000003', 'TP.HCM'),
-        (910101::BIGINT, 'Librarian 1', 'librarian1@hcmut.edu.vn', 'LIB0001', NULL::VARCHAR, 'CAMPUS_1', 'LIBRARIAN', '0903000001', 'Thư viện Cơ sở 1 - Lý Thường Kiệt'),
-        (910102::BIGINT, 'Librarian 2', 'librarian2@hcmut.edu.vn', 'LIB0002', NULL::VARCHAR, 'CAMPUS_2', 'LIBRARIAN', '0903000002', 'Thư viện Cơ sở 2 - Dĩ An'),
-        (910103::BIGINT, 'Librarian 3', 'librarian3@hcmut.edu.vn', 'LIB0003', NULL::VARCHAR, 'ALL', 'LIBRARIAN', '0903000003', 'Library74')
+        (910101::BIGINT, 'Librarian 1', 'librarian1@hcmut.edu.vn', 'LIB0901', NULL::VARCHAR, 'CAMPUS_1', 'LIBRARIAN', '0903000001', 'Thư viện Cơ sở 1 - Lý Thường Kiệt'),
+        (910102::BIGINT, 'Librarian 2', 'librarian2@hcmut.edu.vn', 'LIB0902', NULL::VARCHAR, 'CAMPUS_2', 'LIBRARIAN', '0903000002', 'Thư viện Cơ sở 2 - Dĩ An'),
+        (910103::BIGINT, 'Librarian 3', 'librarian3@hcmut.edu.vn', 'LIB0903', NULL::VARCHAR, 'ALL', 'LIBRARIAN', '0903000003', 'Library74')
     ) AS v(id, full_name, email, identity_code, faculty, librarian_campus, role_name, phone_number, address)
 ),
 upserted AS (
