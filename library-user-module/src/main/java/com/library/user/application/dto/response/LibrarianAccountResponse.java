@@ -14,6 +14,7 @@ public record LibrarianAccountResponse(
     String fullName,
     String phoneNumber,
     String librarianCode,
+    String librarianCampus,
     String address,
     String profilePictureUrl,
     String status,

@@ -44,7 +44,8 @@ public class TransactionNoteController {
       boolean important,
       String note,
       Instant createdAt,
-      Instant updatedAt) {}
+      Instant updatedAt,
+      boolean editableByCurrentUser) {}
 
   @GetMapping
   @RequiresRole(RoleConstants.LIBRARIAN)
@@ -90,11 +91,16 @@ public class TransactionNoteController {
 
   @DeleteMapping
   @RequiresRole(RoleConstants.LIBRARIAN)
-  @Operation(summary = "Delete all notes for a transaction")
+  @Operation(summary = "Delete current librarian notes for a transaction")
   public ApiResponseApp<Void> deleteNote(@PathVariable("transactionId") Long transactionId) {
+    Long librarianId = security.getCurrentUserId();
     jdbcTemplate.update(
-        "DELETE FROM transaction_notes WHERE transaction_id = :transactionId",
-        Map.of("transactionId", transactionId));
+        """
+        DELETE FROM transaction_notes
+        WHERE transaction_id = :transactionId
+          AND librarian_id = :librarianId
+        """,
+        Map.of("transactionId", transactionId, "librarianId", librarianId));
     return ApiResponseApp.success(null);
   }
 
@@ -104,15 +110,18 @@ public class TransactionNoteController {
   public ApiResponseApp<Void> deleteOneNote(
       @PathVariable("transactionId") Long transactionId,
       @PathVariable("noteId") Long noteId) {
+    Long librarianId = security.getCurrentUserId();
     jdbcTemplate.update("""
         DELETE FROM transaction_notes
         WHERE transaction_id = :transactionId
           AND id = :noteId
-        """, Map.of("transactionId", transactionId, "noteId", noteId));
+          AND librarian_id = :librarianId
+        """, Map.of("transactionId", transactionId, "noteId", noteId, "librarianId", librarianId));
     return ApiResponseApp.success(null);
   }
 
   private List<TransactionNoteResponse> fetchNotes(Long transactionId) {
+    Long currentUserId = security.getCurrentUserId();
     return jdbcTemplate.query("""
         SELECT
           tn.id,
@@ -124,15 +133,17 @@ public class TransactionNoteController {
           tn.important,
           tn.note,
           tn.created_at,
-          tn.updated_at
+          tn.updated_at,
+          (tn.librarian_id = :currentUserId) AS editable_by_current_user
         FROM transaction_notes tn
         LEFT JOIN users u ON u.id = tn.librarian_id
         WHERE tn.transaction_id = :transactionId
         ORDER BY tn.created_at ASC, tn.id ASC
-        """, Map.of("transactionId", transactionId), (rs, rowNum) -> mapNote(rs));
+        """, Map.of("transactionId", transactionId, "currentUserId", currentUserId), (rs, rowNum) -> mapNote(rs));
   }
 
   private TransactionNoteResponse fetchNoteById(Long noteId) {
+    Long currentUserId = security.getCurrentUserId();
     return jdbcTemplate.queryForObject("""
         SELECT
           tn.id,
@@ -144,11 +155,12 @@ public class TransactionNoteController {
           tn.important,
           tn.note,
           tn.created_at,
-          tn.updated_at
+          tn.updated_at,
+          (tn.librarian_id = :currentUserId) AS editable_by_current_user
         FROM transaction_notes tn
         LEFT JOIN users u ON u.id = tn.librarian_id
         WHERE tn.id = :noteId
-        """, Map.of("noteId", noteId), (rs, rowNum) -> mapNote(rs));
+        """, Map.of("noteId", noteId, "currentUserId", currentUserId), (rs, rowNum) -> mapNote(rs));
   }
 
   private TransactionNoteResponse mapNote(java.sql.ResultSet rs) throws java.sql.SQLException {
@@ -163,6 +175,7 @@ public class TransactionNoteController {
         .note(rs.getString("note"))
         .createdAt(toInstant(rs.getTimestamp("created_at")))
         .updatedAt(toInstant(rs.getTimestamp("updated_at")))
+        .editableByCurrentUser(rs.getBoolean("editable_by_current_user"))
         .build();
   }
 

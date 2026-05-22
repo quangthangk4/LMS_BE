@@ -16,7 +16,7 @@ public enum EmailTemplates {
             <div style="max-width:640px;margin:0 auto;padding:28px 16px;">
               <div style="background:#ffffff;border:1px solid #e5e7eb;border-radius:12px;overflow:hidden;">
                 <div style="background:#5b5ce2;padding:22px 28px;color:#ffffff;">
-                  <div style="font-size:13px;letter-spacing:.08em;text-transform:uppercase;opacity:.9;">SmartLibrary HCMUT</div>
+                  <div style="font-size:13px;letter-spacing:.08em;text-transform:uppercase;opacity:.9;">Library74</div>
                   <h1 style="margin:8px 0 0;font-size:24px;line-height:1.3;">Xác nhận tài khoản thư viện</h1>
                 </div>
                 <div style="padding:28px;">
@@ -52,7 +52,7 @@ public enum EmailTemplates {
             <div style="max-width:640px;margin:0 auto;padding:28px 16px;">
               <div style="background:#ffffff;border:1px solid #e5e7eb;border-radius:12px;overflow:hidden;">
                 <div style="background:#5b5ce2;padding:22px 28px;color:#ffffff;">
-                  <div style="font-size:13px;letter-spacing:.08em;text-transform:uppercase;opacity:.9;">SmartLibrary HCMUT</div>
+                  <div style="font-size:13px;letter-spacing:.08em;text-transform:uppercase;opacity:.9;">Library74</div>
                   <h1 style="margin:8px 0 0;font-size:24px;line-height:1.3;">Yêu cầu đặt lại mật khẩu</h1>
                 </div>
                 <div style="padding:28px;">
@@ -88,7 +88,7 @@ public enum EmailTemplates {
             <div style="max-width:640px;margin:0 auto;padding:28px 16px;">
               <div style="background:#ffffff;border:1px solid #e5e7eb;border-radius:12px;overflow:hidden;">
                 <div style="background:#5b5ce2;padding:22px 28px;color:#ffffff;">
-                  <div style="font-size:13px;letter-spacing:.08em;text-transform:uppercase;opacity:.9;">SmartLibrary HCMUT</div>
+                  <div style="font-size:13px;letter-spacing:.08em;text-transform:uppercase;opacity:.9;">Library74</div>
                   <h1 style="margin:8px 0 0;font-size:24px;line-height:1.3;">Yêu cầu mượn sách đã sẵn sàng</h1>
                 </div>
                 <div style="padding:28px;">
@@ -115,7 +115,7 @@ public enum EmailTemplates {
           <!doctype html>
           <html><body style="margin:0;background:#f3f4f6;font-family:Arial,Helvetica,sans-serif;color:#111827;">
             <div style="max-width:640px;margin:0 auto;padding:28px 16px;"><div style="background:#ffffff;border:1px solid #e5e7eb;border-radius:12px;overflow:hidden;">
-              <div style="background:#7c3aed;padding:22px 28px;color:#ffffff;"><div style="font-size:13px;letter-spacing:.08em;text-transform:uppercase;opacity:.9;">SmartLibrary HCMUT</div><h1 style="margin:8px 0 0;font-size:24px;">Sách sắp đến hạn trả</h1></div>
+              <div style="background:#7c3aed;padding:22px 28px;color:#ffffff;"><div style="font-size:13px;letter-spacing:.08em;text-transform:uppercase;opacity:.9;">Library74</div><h1 style="margin:8px 0 0;font-size:24px;">Sách sắp đến hạn trả</h1></div>
               <div style="padding:28px;">
                 <p style="margin:0 0 14px;font-size:16px;">Xin chào <strong>%s</strong>,</p>
                 <p style="margin:0 0 18px;font-size:15px;line-height:1.7;color:#374151;">Sách <strong>"%s"</strong> sẽ đến hạn trả vào <strong style="color:#7c3aed;">%s</strong>. Vui lòng trả sách đúng hạn để tránh phát sinh phí phạt.</p>
@@ -133,7 +133,7 @@ public enum EmailTemplates {
           <!doctype html>
           <html><body style="margin:0;background:#f3f4f6;font-family:Arial,Helvetica,sans-serif;color:#111827;">
             <div style="max-width:640px;margin:0 auto;padding:28px 16px;"><div style="background:#ffffff;border:1px solid #e5e7eb;border-radius:12px;overflow:hidden;">
-              <div style="background:#5b5ce2;padding:22px 28px;color:#ffffff;"><div style="font-size:13px;letter-spacing:.08em;text-transform:uppercase;opacity:.9;">SmartLibrary HCMUT</div><h1 style="margin:8px 0 0;font-size:24px;">Trả sách thành công</h1></div>
+              <div style="background:#5b5ce2;padding:22px 28px;color:#ffffff;"><div style="font-size:13px;letter-spacing:.08em;text-transform:uppercase;opacity:.9;">Library74</div><h1 style="margin:8px 0 0;font-size:24px;">Trả sách thành công</h1></div>
               <div style="padding:28px;">
                 <p style="margin:0 0 14px;font-size:16px;">Xin chào <strong>%s</strong>,</p>
                 <p style="margin:0 0 18px;font-size:15px;line-height:1.7;color:#374151;">Bạn đã trả sách <strong>"%s"</strong> thành công vào ngày <strong>%s</strong>.</p>
@@ -152,7 +152,7 @@ public enum EmailTemplates {
           <!doctype html>
           <html><body style="margin:0;background:#f3f4f6;font-family:Arial,Helvetica,sans-serif;color:#111827;">
             <div style="max-width:640px;margin:0 auto;padding:28px 16px;"><div style="background:#ffffff;border:1px solid #e5e7eb;border-radius:12px;overflow:hidden;">
-              <div style="background:#5b5ce2;padding:22px 28px;color:#ffffff;"><div style="font-size:13px;letter-spacing:.08em;text-transform:uppercase;opacity:.9;">SmartLibrary HCMUT</div><h1 style="margin:8px 0 0;font-size:24px;">Sách đặt trước đã có sẵn</h1></div>
+              <div style="background:#5b5ce2;padding:22px 28px;color:#ffffff;"><div style="font-size:13px;letter-spacing:.08em;text-transform:uppercase;opacity:.9;">Library74</div><h1 style="margin:8px 0 0;font-size:24px;">Sách đặt trước đã có sẵn</h1></div>
               <div style="padding:28px;">
                 <p style="margin:0 0 14px;font-size:16px;">Xin chào <strong>%s</strong>,</p>
                 <p style="margin:0 0 18px;font-size:15px;line-height:1.7;color:#374151;">Sách <strong>"%s"</strong> bạn đặt trước hiện đã sẵn sàng tại thư viện.</p>
@@ -171,11 +171,30 @@ public enum EmailTemplates {
           <!doctype html>
           <html><body style="margin:0;background:#f3f4f6;font-family:Arial,Helvetica,sans-serif;color:#111827;">
             <div style="max-width:640px;margin:0 auto;padding:28px 16px;"><div style="background:#ffffff;border:1px solid #e5e7eb;border-radius:12px;overflow:hidden;">
-              <div style="background:#5b5ce2;padding:22px 28px;color:#ffffff;"><div style="font-size:13px;letter-spacing:.08em;text-transform:uppercase;opacity:.9;">SmartLibrary HCMUT</div><h1 style="margin:8px 0 0;font-size:24px;">Thanh toán phí phạt thành công</h1></div>
+              <div style="background:#5b5ce2;padding:22px 28px;color:#ffffff;"><div style="font-size:13px;letter-spacing:.08em;text-transform:uppercase;opacity:.9;">Library74</div><h1 style="margin:8px 0 0;font-size:24px;">Thanh toán phí phạt thành công</h1></div>
               <div style="padding:28px;">
                 <p style="margin:0 0 14px;font-size:16px;">Xin chào <strong>%s</strong>,</p>
                 <p style="margin:0 0 18px;font-size:15px;line-height:1.7;color:#374151;">Khoản phí <strong>%s</strong> liên quan đến sách <strong>"%s"</strong> đã được ghi nhận thanh toán.</p>
                 <p style="margin:24px 0;text-align:center;"><a href="%s" style="display:inline-block;background:#5b5ce2;color:#ffffff;text-decoration:none;font-weight:700;padding:13px 24px;border-radius:8px;">Xem phí phạt của tôi</a></p>
+              </div>
+            </div></div>
+          </body></html>
+          """
+  ),
+
+  // args: fullName, ticketCode, subject, replyMessage
+  CONTACT_REPLY(
+      "[Library74] Phản hồi yêu cầu liên hệ",
+      """
+          <!doctype html>
+          <html><body style="margin:0;background:#f3f4f6;font-family:Arial,Helvetica,sans-serif;color:#111827;">
+            <div style="max-width:640px;margin:0 auto;padding:28px 16px;"><div style="background:#ffffff;border:1px solid #e5e7eb;border-radius:12px;overflow:hidden;">
+              <div style="background:#5b5ce2;padding:22px 28px;color:#ffffff;"><div style="font-size:13px;letter-spacing:.08em;text-transform:uppercase;opacity:.9;">Library74</div><h1 style="margin:8px 0 0;font-size:24px;">Phản hồi từ thư viện</h1></div>
+              <div style="padding:28px;">
+                <p style="margin:0 0 14px;font-size:16px;">Xin chào <strong>%s</strong>,</p>
+                <p style="margin:0 0 12px;font-size:15px;line-height:1.7;color:#374151;">Thư viện đã phản hồi yêu cầu <strong>%s</strong> về chủ đề <strong>%s</strong>:</p>
+                <div style="margin:18px 0;background:#f9fafb;border:1px solid #e5e7eb;border-radius:10px;padding:16px;font-size:15px;line-height:1.7;color:#374151;">%s</div>
+                <p style="margin:0;font-size:13px;line-height:1.6;color:#6b7280;">Nếu vấn đề chưa được giải quyết, vui lòng phản hồi email này hoặc gửi yêu cầu mới trên trang Liên hệ.</p>
               </div>
             </div></div>
           </body></html>

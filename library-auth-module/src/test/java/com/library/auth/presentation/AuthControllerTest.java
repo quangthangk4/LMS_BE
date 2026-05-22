@@ -72,6 +72,7 @@ class AuthControllerTest {
         RegisterUserCommand request = new RegisterUserCommand(
             "Nguyen Van A",
             "2212345",
+            "STUDENT",
             "student@hcmut.edu.vn",
             "pass1234",
             "pass1234",
@@ -100,6 +101,7 @@ class AuthControllerTest {
         RegisterUserCommand request = new RegisterUserCommand(
             "Nguyen Van A",
             "2212345",
+            "STUDENT",
             "student@gmail.com",
             "pass1234",
             "pass1234",
@@ -120,6 +122,7 @@ class AuthControllerTest {
         RegisterUserCommand request = new RegisterUserCommand(
             "Nguyen Van A",
             "22ABC45",
+            "STUDENT",
             "student@hcmut.edu.vn",
             "pass1234",
             "pass1234",

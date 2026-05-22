@@ -39,12 +39,11 @@ public class SystemReviewController {
           sr.rating,
           sr.comment,
           COALESCE(u.full_name, sr.reviewer_name) AS full_name,
+          u.faculty AS faculty,
           COALESCE(
               NULLIF(sr.reviewer_role, ''),
-              CASE
-                  WHEN u.student_id IS NOT NULL THEN CONCAT('Sinh viên ', u.student_id)
-                  ELSE 'Người dùng SmartLibrary'
-              END
+              u.faculty,
+              'Người dùng Library74'
           ) AS reviewer_role,
           COALESCE(u.profile_picture_url, sr.profile_picture_url) AS profile_picture_url,
           sr.is_published,
@@ -57,30 +56,34 @@ public class SystemReviewController {
   @GetMapping
   public ApiResponseApp<PageResponse<SystemReviewResponse>> getPublicReviews(
       @RequestParam(name = "page", defaultValue = "0") int page,
-      @RequestParam(name = "size", defaultValue = "9") int size
+      @RequestParam(name = "size", defaultValue = "9") int size,
+      @RequestParam(name = "rating", required = false) Integer rating,
+      @RequestParam(name = "sort", defaultValue = "newest") String sort
   ) {
     int safePage = Math.max(page, 0);
     int safeSize = Math.max(1, Math.min(size, 30));
+    boolean hasRatingFilter = rating != null && rating >= 1 && rating <= 5;
+    String whereClause = hasRatingFilter
+        ? "WHERE sr.is_published = TRUE AND sr.rating = :rating"
+        : "WHERE sr.is_published = TRUE";
+    String orderBy = resolvePublicOrderBy(sort);
     MapSqlParameterSource params = new MapSqlParameterSource()
         .addValue("limit", safeSize)
         .addValue("offset", safePage * safeSize);
+    if (hasRatingFilter) {
+      params.addValue("rating", rating);
+    }
 
     List<SystemReviewResponse> content = jdbcTemplate.query(
-        REVIEW_SELECT + """
-        WHERE sr.is_published = TRUE
-        ORDER BY sr.rating DESC, LENGTH(sr.comment) DESC, COALESCE(sr.updated_at, sr.created_at) DESC
+        REVIEW_SELECT + whereClause + "\n" + orderBy + """
         LIMIT :limit OFFSET :offset
         """,
         params,
         (rs, rowNum) -> mapReview(rs)
     );
     long total = jdbcTemplate.queryForObject(
-        """
-        SELECT COUNT(*)
-        FROM system_reviews
-        WHERE is_published = TRUE
-        """,
-        Map.of(),
+        "SELECT COUNT(*) FROM system_reviews sr " + whereClause,
+        params,
         Long.class
     );
     int totalPages = total == 0 ? 0 : (int) Math.ceil((double) total / safeSize);
@@ -138,20 +141,23 @@ public class SystemReviewController {
     Long userId = securityEvaluator.getCurrentUserId();
     Map<String, Object> user = jdbcTemplate.queryForMap(
         """
-        SELECT id, full_name, student_id, profile_picture_url
+        SELECT id, full_name, faculty, profile_picture_url
         FROM users
         WHERE id = :userId
         """,
         new MapSqlParameterSource("userId", userId)
     );
     String fullName = String.valueOf(user.get("full_name"));
-    String studentId = user.get("student_id") == null ? null : String.valueOf(user.get("student_id"));
-    String role = studentId == null || studentId.isBlank()
-        ? "Người dùng SmartLibrary"
-        : "Sinh viên " + studentId;
+    String faculty = user.get("faculty") == null ? null : String.valueOf(user.get("faculty"));
+    String role = faculty == null || faculty.isBlank() ? "Người dùng Library74" : faculty;
     String profilePictureUrl = user.get("profile_picture_url") == null
         ? null
         : String.valueOf(user.get("profile_picture_url"));
+    Boolean isNewReview = jdbcTemplate.queryForObject(
+        "SELECT COUNT(*) = 0 FROM system_reviews WHERE user_id = :userId",
+        new MapSqlParameterSource("userId", userId),
+        Boolean.class
+    );
 
     jdbcTemplate.update(
         """
@@ -182,6 +188,12 @@ public class SystemReviewController {
             .addValue("rating", request.getRating())
             .addValue("comment", request.getComment().trim())
     );
+    if (Boolean.TRUE.equals(isNewReview)) {
+      jdbcTemplate.update(
+          "UPDATE users SET contribution_score = COALESCE(contribution_score, 0) + 20 WHERE id = :userId",
+          new MapSqlParameterSource("userId", userId)
+      );
+    }
 
     return getMyReview();
   }
@@ -223,12 +235,22 @@ public class SystemReviewController {
         .comment(rs.getString("comment"))
         .fullName(rs.getString("full_name"))
         .role(rs.getString("reviewer_role"))
+        .faculty(rs.getString("faculty"))
         .profilePictureUrl(rs.getString("profile_picture_url"))
         .published(rs.getBoolean("is_published"))
         .satisfied(rating >= 3)
         .createdAt(toInstant(rs.getTimestamp("created_at")))
         .updatedAt(toInstant(rs.getTimestamp("updated_at")))
         .build();
+  }
+
+  private String resolvePublicOrderBy(String sort) {
+    return switch (sort == null ? "" : sort.toLowerCase()) {
+      case "oldest" -> "ORDER BY COALESCE(sr.updated_at, sr.created_at) ASC, sr.id ASC\n";
+      case "highest" -> "ORDER BY sr.rating DESC, LENGTH(sr.comment) DESC, COALESCE(sr.updated_at, sr.created_at) DESC\n";
+      case "lowest" -> "ORDER BY sr.rating ASC, COALESCE(sr.updated_at, sr.created_at) DESC\n";
+      default -> "ORDER BY COALESCE(sr.updated_at, sr.created_at) DESC, sr.rating DESC, LENGTH(sr.comment) DESC\n";
+    };
   }
 
   private Instant toInstant(Timestamp timestamp) {

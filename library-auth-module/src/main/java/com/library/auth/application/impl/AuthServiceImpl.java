@@ -41,6 +41,8 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.core.ParameterizedTypeReference;
 import org.springframework.http.MediaType;
+import org.springframework.jdbc.core.namedparam.MapSqlParameterSource;
+import org.springframework.jdbc.core.namedparam.NamedParameterJdbcTemplate;
 import org.springframework.security.oauth2.client.registration.ClientRegistration;
 import org.springframework.security.oauth2.client.registration.ClientRegistrationRepository;
 import org.springframework.stereotype.Service;
@@ -61,6 +63,7 @@ public class AuthServiceImpl implements AuthService {
   private final WebClient webClient;
   private final UserRepository userRepository;
   private final RoleRepository roleRepository;
+  private final NamedParameterJdbcTemplate jdbcTemplate;
 
   @Value("${jwt.expirationTime}")
   @NonFinal
@@ -159,6 +162,10 @@ public class AuthServiceImpl implements AuthService {
     String email = userInfo.get("email") != null ? userInfo.get("email").toString()
         : loginType + "_" + providerId + "@dummy.com";
 
+    if ("google".equals(loginType) && !isGoogleEmailVerified(userInfo)) {
+      throw new AppException(ErrorCode.VERIFY_EMAIL_FAILED);
+    }
+
     if (!email.endsWith("@hcmut.edu.vn")) {
       throw new AppException(ErrorCode.INVALID_EMAIL);
     }
@@ -182,6 +189,12 @@ public class AuthServiceImpl implements AuthService {
       } else {
         user = userRepository.findByEmail(Email.of(email)).orElse(null);
       }
+    }
+    if ("google".equals(loginType)) {
+      jdbcTemplate.update(
+          "UPDATE users SET is_verified = TRUE WHERE email = :email",
+          new MapSqlParameterSource("email", email)
+      );
     }
 
     // Here you would typically generate a JWT token or similar
@@ -244,6 +257,13 @@ public class AuthServiceImpl implements AuthService {
         .bodyToMono(new ParameterizedTypeReference<Map<String, Object>>() {
         })
         .block(); // Blocking for Spring Web
+  }
+
+  private boolean isGoogleEmailVerified(Map<String, Object> userInfo) {
+    Object openIdVerified = userInfo.get("email_verified");
+    Object oauthVerified = userInfo.get("verified_email");
+    return Boolean.parseBoolean(String.valueOf(openIdVerified))
+        || Boolean.parseBoolean(String.valueOf(oauthVerified));
   }
 
 

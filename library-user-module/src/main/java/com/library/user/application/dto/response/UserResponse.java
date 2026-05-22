@@ -20,6 +20,7 @@ public record UserResponse(
     Set<RoleResponse> roles,
     String status,
     LocalDateTime lastLoginAt,
+    Boolean canChangePassword,
     Long creditScore,
     Long contributionScore
 ) {

@@ -142,14 +142,17 @@ public class User {
   }
 
   // onboarding profile
-  public void completeOnboardingProfile(String studentId, FacultyEnum faculty) {
+  public void completeOnboardingProfile(String studentId, String phoneNumber, FacultyEnum faculty) {
     if (studentId == null || studentId.trim().isEmpty()) {
       throw new DomainException("Student ID cannot be null or empty");
     }
     if (faculty == null) {
       throw new DomainException("Faculty cannot be null");
     }
-    this.profile = this.profile.withStudentId(studentId).withFaculty(faculty);
+    this.profile = this.profile
+        .withStudentId(studentId.trim())
+        .withPhoneNumber(phoneNumber != null && !phoneNumber.isBlank() ? phoneNumber.trim() : null)
+        .withFaculty(faculty);
   }
 
   // ============== Role Management ==============

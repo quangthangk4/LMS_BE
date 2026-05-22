@@ -112,6 +112,7 @@ class SignUpUseCaseTest {
     return new RegisterUserCommand(
         "Nguyen Van A",
         "2213188",
+        "STUDENT",
         "student@hcmut.edu.vn",
         "Password123",
         "Password123",

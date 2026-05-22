@@ -21,7 +21,7 @@ public class OnboardingProfileUseCaseImpl implements OnboardingProfileUseCase {
     public void execute(UserId userId, OnboardingProfileRequest request) {
         User user = userRepository.findById(userId)
                 .orElseThrow(() -> new AppException(ErrorCode.USER_NOT_FOUND));
-        user.completeOnboardingProfile(request.studentId(), request.faculty());
+        user.completeOnboardingProfile(request.studentId(), request.phoneNumber(), request.faculty());
         userRepository.save(user);
     }
 }

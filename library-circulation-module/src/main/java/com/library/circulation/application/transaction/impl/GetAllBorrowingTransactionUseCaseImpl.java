@@ -114,6 +114,8 @@ public class GetAllBorrowingTransactionUseCaseImpl implements GetAllBorrowingTra
               t.user_id,
               u.full_name,
               u.student_id,
+              u.email,
+              u.phone_number,
               COALESCE(fa.fine_amount, 0) AS fine_amount,
               fa.fine_types,
               CASE
@@ -144,6 +146,8 @@ public class GetAllBorrowingTransactionUseCaseImpl implements GetAllBorrowingTra
                 .userId(rs.getLong("user_id"))
                 .fullName(rs.getString("full_name"))
                 .studentId(rs.getString("student_id"))
+                .email(rs.getString("email"))
+                .phoneNumber(rs.getString("phone_number"))
                 .fineAmount((BigDecimal) rs.getObject("fine_amount"))
                 .finePaymentStatus(toPaymentStatus(rs.getString("fine_payment_status")))
                 .fineTypes(rs.getString("fine_types"))

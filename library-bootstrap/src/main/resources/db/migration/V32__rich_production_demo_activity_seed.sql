@@ -208,9 +208,17 @@ SELECT
     NOW() - (n % 45) * INTERVAL '1 day',
     NOW(),
     901000 + (((n - 1) % 80) + 1),
-    ((n * 7 - 1) % 32) + 1,
+    picked_publication.id,
     NOW() - (n % 45) * INTERVAL '1 day'
 FROM generate_series(1, 220) AS g(n)
+JOIN LATERAL (
+    SELECT id
+    FROM (
+        SELECT id, row_number() OVER (ORDER BY id) AS rn, count(*) OVER () AS total
+        FROM publications
+    ) ranked_publications
+    WHERE rn = ((n * 7 - 1) % total) + 1
+) picked_publication ON TRUE
 ON CONFLICT DO NOTHING;
 
 INSERT INTO borrowing_transactions (
@@ -221,7 +229,7 @@ SELECT
     910000 + n,
     NOW() - (120 - (n % 95)) * INTERVAL '1 day',
     NOW() - (n % 9) * INTERVAL '1 day',
-    ((n - 1) % (SELECT COUNT(*) FROM items)) + 1,
+    picked_item.id,
     900001 + ((n - 1) % 80),
     (ARRAY[2,3,900201,900202,900203,900204,900205,900206])[((n - 1) % 8) + 1],
     CASE WHEN n <= 155 THEN (ARRAY[3,2,900202,900204,900206,900201,900203,900205])[((n - 1) % 8) + 1] ELSE NULL END,
@@ -245,6 +253,14 @@ SELECT
         ELSE 'WAITING_FOR_PICKUP'
     END
 FROM generate_series(1, 220) AS g(n)
+JOIN LATERAL (
+    SELECT id
+    FROM (
+        SELECT id, row_number() OVER (ORDER BY id) AS rn, count(*) OVER () AS total
+        FROM items
+    ) ranked_items
+    WHERE rn = ((n - 1) % total) + 1
+) picked_item ON TRUE
 ON CONFLICT (id) DO NOTHING;
 
 INSERT INTO fines (id, created_at, updated_at, transaction_id, fine_amount, payment_status, type, paid_date, paid_by_librarian_id)
@@ -302,7 +318,7 @@ SELECT
     930000 + n,
     NOW() - (n % 70) * INTERVAL '1 day',
     NOW() - (n % 15) * INTERVAL '1 day',
-    ((n * 5 - 1) % 32) + 1,
+    picked_publication.id,
     900001 + ((n - 1) % 80),
     CASE WHEN n <= 5 THEN 1 WHEN n <= 15 THEN 2 WHEN n <= 55 THEN 3 WHEN n <= 130 THEN 4 ELSE 5 END,
     CASE
@@ -317,6 +333,14 @@ SELECT
     CASE WHEN n <= 155 THEN 910000 + n ELSE NULL END,
     CASE WHEN n <= 155 THEN i.barcode ELSE NULL END
 FROM generate_series(1, 260) AS g(n)
+JOIN LATERAL (
+    SELECT id
+    FROM (
+        SELECT id, row_number() OVER (ORDER BY id) AS rn, count(*) OVER () AS total
+        FROM publications
+    ) ranked_publications
+    WHERE rn = ((n * 5 - 1) % total) + 1
+) picked_publication ON TRUE
 LEFT JOIN borrowing_transactions bt ON bt.id = 910000 + n
 LEFT JOIN items i ON i.id = bt.item_id
 ON CONFLICT (id) DO NOTHING;
@@ -408,9 +432,17 @@ SELECT
     NOW() - (n % 80) * INTERVAL '1 day',
     NOW(),
     900001 + ((n - 1) % 80),
-    ((n * 11 - 1) % 32) + 1,
+    picked_publication.id,
     (ARRAY['WATCH','WISHLIST','BORROWED','WATCH','BORROWED'])[((n - 1) % 5) + 1]
 FROM generate_series(1, 260) AS g(n)
+JOIN LATERAL (
+    SELECT id
+    FROM (
+        SELECT id, row_number() OVER (ORDER BY id) AS rn, count(*) OVER () AS total
+        FROM publications
+    ) ranked_publications
+    WHERE rn = ((n * 11 - 1) % total) + 1
+) picked_publication ON TRUE
 ON CONFLICT (id) DO NOTHING;
 
 INSERT INTO notifications (id, created_at, updated_at, title, type, message, link, reference_id)

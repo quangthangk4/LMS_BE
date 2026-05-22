@@ -289,6 +289,7 @@ public class RatingController {
           && rating.getEditableUntil() != null
           && !rating.getEditableUntil().isBefore(Instant.now());
       rating.setEditableByCurrentUser(editable);
+      rating.setStudentId(null);
     });
   }
 

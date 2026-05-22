@@ -14,6 +14,8 @@ import io.swagger.v3.oas.annotations.Operation;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.jdbc.core.namedparam.MapSqlParameterSource;
+import org.springframework.jdbc.core.namedparam.NamedParameterJdbcTemplate;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
 import org.springframework.web.bind.annotation.GetMapping;
@@ -38,6 +40,15 @@ public class UserController {
   private final UploadAvatarUseCase uploadAvatarUseCase;
   private final ChangePasswordUseCase changePasswordUseCase;
   private final SecurityEvaluator security;
+  private final NamedParameterJdbcTemplate jdbcTemplate;
+
+  public record ExchangeContributionResponse(
+      int creditScore,
+      int contributionScore,
+      int exchangedCredit,
+      int spentContribution
+  ) {
+  }
 
   @GetMapping("/my-profile")
   @RequiresAuthentication()
@@ -79,5 +90,49 @@ public class UserController {
     log.info("REST request to change password for user ID: {}", userId);
     changePasswordUseCase.execute(request, userId);
     return ApiResponseApp.success("Change password successfully");
+  }
+
+  @PostMapping("/my-profile/exchange-contribution")
+  @Operation(summary = "Exchange contribution points for credit score")
+  @RequiresAuthentication()
+  public ApiResponseApp<ExchangeContributionResponse> exchangeContributionScore() {
+    Long userId = security.getCurrentUserId();
+    MapSqlParameterSource params = new MapSqlParameterSource("userId", userId);
+    java.util.Map<String, Object> row = jdbcTemplate.queryForMap(
+        """
+        SELECT COALESCE(credit_score, 100) AS credit_score,
+               COALESCE(contribution_score, 0) AS contribution_score
+        FROM users
+        WHERE id = :userId
+        """,
+        params
+    );
+    int creditScore = ((Number) row.get("credit_score")).intValue();
+    int contributionScore = ((Number) row.get("contribution_score")).intValue();
+    int missingCredit = Math.max(0, 100 - creditScore);
+    int exchangedCredit = Math.min(missingCredit, contributionScore / 20);
+    int spentContribution = exchangedCredit * 20;
+
+    if (exchangedCredit > 0) {
+      jdbcTemplate.update(
+          """
+          UPDATE users
+          SET credit_score = LEAST(100, COALESCE(credit_score, 100) + :exchangedCredit),
+              contribution_score = GREATEST(0, COALESCE(contribution_score, 0) - :spentContribution)
+          WHERE id = :userId
+          """,
+          params
+              .addValue("exchangedCredit", exchangedCredit)
+              .addValue("spentContribution", spentContribution)
+      );
+    }
+
+    return ApiResponseApp.success("Exchange contribution score successful",
+        new ExchangeContributionResponse(
+            Math.min(100, creditScore + exchangedCredit),
+            Math.max(0, contributionScore - spentContribution),
+            exchangedCredit,
+            spentContribution
+        ));
   }
 }

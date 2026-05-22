@@ -47,6 +47,9 @@ public class UserEntity extends BaseEntity {
     @Column(name = "student_id", length = 20)
     private String studentId;
 
+    @Column(name = "librarian_campus", length = 20)
+    private String librarianCampus;
+
     @Column(name = "is_verified", nullable = false)
     @Builder.Default
     private boolean verified = false;

@@ -5,6 +5,7 @@ public record AdminUpdateUserRequest(
     String fullName,
     String phoneNumber,
     String studentId,
+    String librarianCampus,
     String faculty,
     String address,
     String profilePictureUrl

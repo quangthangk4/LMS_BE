@@ -40,6 +40,48 @@ public class SaveDocumentUrlUseCaseImpl implements SaveDocumentUrlUseCase {
         return fileUrl;
     }
 
+    @Override
+    @Transactional
+    public void reprocessExistingDocument(Long publicationId) {
+        PublicationEntity publication = publicationRepository.findById(publicationId)
+            .orElseThrow(() -> new AppException(ErrorCode.PUBLICATION_NOT_FOUND));
+        String fileUrl = publication.getFileUrl();
+        if (fileUrl == null || fileUrl.isBlank()) {
+            throw new AppException(ErrorCode.INVALID_REQUEST);
+        }
+        markAiQueued(publicationId);
+        triggerAiProcessingAfterCommit(publicationId, fileUrl);
+        log.info("AI reprocessing queued for publication={}", publicationId);
+    }
+
+    @Override
+    @Transactional
+    public void reprocessExistingDocumentVectors(Long publicationId) {
+        PublicationEntity publication = publicationRepository.findById(publicationId)
+            .orElseThrow(() -> new AppException(ErrorCode.PUBLICATION_NOT_FOUND));
+        String fileUrl = publication.getFileUrl();
+        if (fileUrl == null || fileUrl.isBlank()) {
+            throw new AppException(ErrorCode.INVALID_REQUEST);
+        }
+        markAiQueued(publicationId);
+        triggerAiVectorizationAfterCommit(publicationId, fileUrl);
+        log.info("AI vectorization queued for publication={}", publicationId);
+    }
+
+    @Override
+    @Transactional
+    public void generateExistingDocumentMetadata(Long publicationId) {
+        PublicationEntity publication = publicationRepository.findById(publicationId)
+            .orElseThrow(() -> new AppException(ErrorCode.PUBLICATION_NOT_FOUND));
+        String fileUrl = publication.getFileUrl();
+        if (fileUrl == null || fileUrl.isBlank()) {
+            throw new AppException(ErrorCode.INVALID_REQUEST);
+        }
+        markAiQueued(publicationId);
+        triggerAiMetadataAfterCommit(publicationId, fileUrl);
+        log.info("AI metadata generation queued for publication={}", publicationId);
+    }
+
     private void triggerAiProcessingAfterCommit(Long publicationId, String fileUrl) {
         if (!TransactionSynchronizationManager.isSynchronizationActive()) {
             aiPublicationProcessingPort.processPublication(publicationId, fileUrl, true);
@@ -50,6 +92,34 @@ public class SaveDocumentUrlUseCaseImpl implements SaveDocumentUrlUseCase {
             @Override
             public void afterCommit() {
                 aiPublicationProcessingPort.processPublication(publicationId, fileUrl, true);
+            }
+        });
+    }
+
+    private void triggerAiVectorizationAfterCommit(Long publicationId, String fileUrl) {
+        if (!TransactionSynchronizationManager.isSynchronizationActive()) {
+            aiPublicationProcessingPort.vectorizePublication(publicationId, fileUrl, true);
+            return;
+        }
+
+        TransactionSynchronizationManager.registerSynchronization(new TransactionSynchronization() {
+            @Override
+            public void afterCommit() {
+                aiPublicationProcessingPort.vectorizePublication(publicationId, fileUrl, true);
+            }
+        });
+    }
+
+    private void triggerAiMetadataAfterCommit(Long publicationId, String fileUrl) {
+        if (!TransactionSynchronizationManager.isSynchronizationActive()) {
+            aiPublicationProcessingPort.generatePublicationMetadata(publicationId, fileUrl, true);
+            return;
+        }
+
+        TransactionSynchronizationManager.registerSynchronization(new TransactionSynchronization() {
+            @Override
+            public void afterCommit() {
+                aiPublicationProcessingPort.generatePublicationMetadata(publicationId, fileUrl, true);
             }
         });
     }

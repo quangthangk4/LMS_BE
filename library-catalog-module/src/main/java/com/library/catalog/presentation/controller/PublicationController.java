@@ -116,6 +116,27 @@ public class PublicationController {
         saveDocumentUrlUseCase.execute(id, request.s3Key()));
   }
 
+  @PostMapping("/{id}/ai/reprocess")
+  @RequiresRole(RoleConstants.LIBRARIAN)
+  public ApiResponseApp<Void> reprocessPublicationAi(@PathVariable("id") Long id) {
+    saveDocumentUrlUseCase.reprocessExistingDocument(id);
+    return ApiResponseApp.success("AI reprocessing queued");
+  }
+
+  @PostMapping("/{id}/ai/vectorize")
+  @RequiresRole(RoleConstants.LIBRARIAN)
+  public ApiResponseApp<Void> vectorizePublicationAi(@PathVariable("id") Long id) {
+    saveDocumentUrlUseCase.reprocessExistingDocumentVectors(id);
+    return ApiResponseApp.success("AI vectorization queued");
+  }
+
+  @PostMapping("/{id}/ai/metadata")
+  @RequiresRole(RoleConstants.LIBRARIAN)
+  public ApiResponseApp<Void> generatePublicationAiMetadata(@PathVariable("id") Long id) {
+    saveDocumentUrlUseCase.generateExistingDocumentMetadata(id);
+    return ApiResponseApp.success("AI metadata generation queued");
+  }
+
 
   @DeleteMapping("/{id}")
   @RequiresRole(RoleConstants.LIBRARIAN)

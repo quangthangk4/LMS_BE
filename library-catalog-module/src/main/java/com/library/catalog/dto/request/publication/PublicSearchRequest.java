@@ -16,6 +16,7 @@ public class PublicSearchRequest {
     private Boolean available;
     private String branch;
     private String sortBy;
+    private Boolean titleOnly;
     private int page = 0;
     private int size = 12;
 }

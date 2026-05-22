@@ -20,6 +20,8 @@ public class TransactionListResponse {
     private Long userId;
     private String fullName;
     private String studentId;
+    private String email;
+    private String phoneNumber;
     private BigDecimal fineAmount;
     private PaymentStatus finePaymentStatus;
     private String fineTypes;
@@ -36,6 +38,38 @@ public class TransactionListResponse {
     private TransactionStatus status;
     private Boolean important;
     private String note;
+
+    public TransactionListResponse(
+        Long transactionId,
+        Long userId,
+        String fullName,
+        String studentId,
+        String email,
+        String phoneNumber,
+        BigDecimal fineAmount,
+        PaymentStatus finePaymentStatus,
+        String fineTypes,
+        Instant createdAt,
+        Instant borrowedDate,
+        String issueLibrarianName,
+        String issueLibrarianCode,
+        LocalDate dueDate,
+        Instant returnedDate,
+        String returnLibrarianName,
+        String returnLibrarianCode,
+        String finePaidByLibrarianName,
+        String finePaidByLibrarianCode,
+        TransactionStatus status,
+        Boolean important,
+        String note
+    ) {
+        this(transactionId, userId, fullName, studentId, fineAmount, finePaymentStatus, fineTypes,
+            createdAt, borrowedDate, issueLibrarianName, issueLibrarianCode, dueDate, returnedDate,
+            returnLibrarianName, returnLibrarianCode, finePaidByLibrarianName, finePaidByLibrarianCode,
+            status, important, note);
+        this.email = email;
+        this.phoneNumber = phoneNumber;
+    }
 
     public TransactionListResponse(
         Long transactionId,

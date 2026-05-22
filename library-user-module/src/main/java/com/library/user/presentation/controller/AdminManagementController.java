@@ -72,6 +72,7 @@ public class AdminManagementController {
             request.fullName(),
             request.password(),
             request.librarianCode(),
+            request.librarianCampus(),
             request.phoneNumber(),
             request.address(),
             request.profilePictureUrl(),
@@ -86,11 +87,12 @@ public class AdminManagementController {
         @RequestParam("email") String email,
         @RequestParam("fullName") String fullName,
         @RequestParam("password") String password,
-        @RequestParam("librarianCode") String librarianCode,
+        @RequestParam(value = "librarianCode", required = false) String librarianCode,
+        @RequestParam("librarianCampus") String librarianCampus,
         @RequestParam("phoneNumber") String phoneNumber,
         @RequestParam("address") String address,
         @RequestParam("avatar") MultipartFile avatar) {
-        return createLibrarianAccount(email, fullName, password, librarianCode, phoneNumber, address, null, avatar);
+        return createLibrarianAccount(email, fullName, password, librarianCode, librarianCampus, phoneNumber, address, null, avatar);
     }
 
     private com.library.shared.dto.ApiResponseApp<com.library.user.application.dto.response.LibrarianAccountResponse> createLibrarianAccount(
@@ -98,6 +100,7 @@ public class AdminManagementController {
         String rawFullName,
         String rawPassword,
         String rawLibrarianCode,
+        String rawLibrarianCampus,
         String rawPhoneNumber,
         String rawAddress,
         String rawProfilePictureUrl,
@@ -106,7 +109,7 @@ public class AdminManagementController {
         requireText(rawEmail, "Email is required");
         requireText(rawFullName, "Full name is required");
         requireText(rawPassword, "Password is required");
-        requireText(rawLibrarianCode, "Librarian code is required");
+        requireText(rawLibrarianCampus, "Librarian campus is required");
         requireText(rawPhoneNumber, "Phone number is required");
         requireText(rawAddress, "Address is required");
         if (avatar == null) {
@@ -119,7 +122,8 @@ public class AdminManagementController {
         if (userRepository.existsByEmail(email)) {
             throw new ResponseStatusException(HttpStatus.CONFLICT, "Email already exists");
         }
-        String librarianCode = rawLibrarianCode.trim();
+        String librarianCode = generateNextLibrarianCode();
+        String librarianCampus = normalizeLibrarianCampus(rawLibrarianCampus);
         Integer duplicateCode = jdbcTemplate.queryForObject(
             """
             SELECT COUNT(*)
@@ -144,6 +148,7 @@ public class AdminManagementController {
             .fullName(rawFullName.trim())
             .phoneNumber(rawPhoneNumber.trim())
             .studentId(librarianCode)
+            .librarianCampus(librarianCampus)
             .address(rawAddress.trim())
             .profilePictureUrl(rawProfilePictureUrl == null ? null : rawProfilePictureUrl.trim())
             .hashedPassword(passwordHasher.hash(rawPassword))
@@ -166,9 +171,34 @@ public class AdminManagementController {
             "users",
             saved.getId(),
             "Admin created librarian account " + saved.getEmail(),
-            Map.of("email", saved.getEmail(), "fullName", saved.getFullName(), "librarianCode", librarianCode)
+            Map.of("email", saved.getEmail(), "fullName", saved.getFullName(), "librarianCode", librarianCode, "librarianCampus", librarianCampus)
         );
         return com.library.shared.dto.ApiResponseApp.created("Librarian account created", toLibrarianResponse(saved));
+    }
+
+    private String generateNextLibrarianCode() {
+        Integer maxNumber = jdbcTemplate.queryForObject(
+            """
+            SELECT COALESCE(MAX(CAST(SUBSTRING(student_id FROM 4) AS integer)), 0)
+            FROM users
+            WHERE student_id ~ '^LIB[0-9]+$'
+            """,
+            new MapSqlParameterSource(),
+            Integer.class
+        );
+        int next = (maxNumber == null ? 0 : maxNumber) + 1;
+        while (true) {
+            String candidate = String.format("LIB%04d", next);
+            Integer exists = jdbcTemplate.queryForObject(
+                "SELECT COUNT(*) FROM users WHERE student_id = :code",
+                new MapSqlParameterSource().addValue("code", candidate),
+                Integer.class
+            );
+            if (exists == null || exists == 0) {
+                return candidate;
+            }
+            next++;
+        }
     }
 
     @GetMapping("/users")
@@ -183,7 +213,7 @@ public class AdminManagementController {
         String safeKeyword = keyword == null || keyword.isBlank() ? null : "%" + keyword.trim().toLowerCase() + "%";
 
         StringBuilder sql = new StringBuilder("""
-            SELECT u.id, u.email, u.full_name, u.phone_number, u.student_id, u.faculty,
+            SELECT u.id, u.email, u.full_name, u.phone_number, u.student_id, u.librarian_campus, u.faculty,
                    u.address, u.profile_picture_url, u.status, u.is_verified, u.created_at, u.last_login_at,
                    COALESCE(string_agg(DISTINCT r.role_name, ',' ORDER BY r.role_name), '') AS roles
             FROM users u
@@ -211,7 +241,7 @@ public class AdminManagementController {
             params.addValue("keyword", safeKeyword);
         }
         sql.append("""
-            GROUP BY u.id, u.email, u.full_name, u.phone_number, u.student_id, u.faculty,
+            GROUP BY u.id, u.email, u.full_name, u.phone_number, u.student_id, u.librarian_campus, u.faculty,
                      u.address, u.profile_picture_url, u.status, u.is_verified, u.created_at, u.last_login_at
             ORDER BY u.created_at DESC NULLS LAST, u.id DESC
             """);
@@ -225,6 +255,7 @@ public class AdminManagementController {
                 .fullName(rs.getString("full_name"))
                 .phoneNumber(rs.getString("phone_number"))
                 .studentId(rs.getString("student_id"))
+                .librarianCampus(rs.getString("librarian_campus"))
                 .faculty(rs.getString("faculty"))
                 .address(rs.getString("address"))
                 .profilePictureUrl(rs.getString("profile_picture_url"))
@@ -294,8 +325,21 @@ public class AdminManagementController {
 
         String email = requiredTrim(request.email(), "Email is required").toLowerCase();
         String fullName = requiredTrim(request.fullName(), "Full name is required");
-        String code = requiredTrim(request.studentId(), isLibrarian ? "Librarian code is required" : "Student ID is required");
+        String code;
+        if (isLibrarian) {
+            code = user.getStudentId();
+            if (code == null || code.isBlank()) {
+                code = generateNextLibrarianCode();
+            }
+            String requestedCode = trimToNull(request.studentId());
+            if (requestedCode != null && !requestedCode.equals(code)) {
+                throw new ResponseStatusException(HttpStatus.CONFLICT, "Librarian code is immutable");
+            }
+        } else {
+            code = requiredTrim(request.studentId(), "Student ID is required");
+        }
         String phoneNumber = trimToNull(request.phoneNumber());
+        String librarianCampus = isLibrarian ? normalizeLibrarianCampus(request.librarianCampus()) : null;
         String address = trimToNull(request.address());
         String avatarUrl = trimToNull(request.profilePictureUrl());
 
@@ -308,25 +352,26 @@ public class AdminManagementController {
             throw new ResponseStatusException(HttpStatus.CONFLICT, "Email already exists");
         }
 
-        String roleForCode = isLibrarian ? RoleConstants.LIBRARIAN : RoleConstants.STUDENT;
-        Integer duplicateCode = jdbcTemplate.queryForObject(
-            """
-            SELECT COUNT(*)
-            FROM users u
-            JOIN user_roles ur ON ur.user_id = u.id
-            JOIN roles r ON r.id = ur.role_id
-            WHERE r.role_name = :role
-              AND u.student_id = :code
-              AND u.id <> :id
-            """,
-            new MapSqlParameterSource()
-                .addValue("role", roleForCode)
-                .addValue("code", code)
-                .addValue("id", userId),
-            Integer.class
-        );
-        if (duplicateCode != null && duplicateCode > 0) {
-            throw new ResponseStatusException(HttpStatus.CONFLICT, isLibrarian ? "Librarian code already exists" : "Student ID already exists");
+        if (!isLibrarian) {
+            Integer duplicateCode = jdbcTemplate.queryForObject(
+                """
+                SELECT COUNT(*)
+                FROM users u
+                JOIN user_roles ur ON ur.user_id = u.id
+                JOIN roles r ON r.id = ur.role_id
+                WHERE r.role_name = :role
+                  AND u.student_id = :code
+                  AND u.id <> :id
+                """,
+                new MapSqlParameterSource()
+                    .addValue("role", RoleConstants.STUDENT)
+                    .addValue("code", code)
+                    .addValue("id", userId),
+                Integer.class
+            );
+            if (duplicateCode != null && duplicateCode > 0) {
+                throw new ResponseStatusException(HttpStatus.CONFLICT, "Student ID already exists");
+            }
         }
 
         FacultyEnum faculty = null;
@@ -348,6 +393,7 @@ public class AdminManagementController {
         user.setEmail(email);
         user.setFullName(fullName);
         user.setStudentId(code);
+        user.setLibrarianCampus(librarianCampus);
         user.setPhoneNumber(phoneNumber);
         user.setAddress(address);
         user.setProfilePictureUrl(avatarUrl);
@@ -498,6 +544,7 @@ public class AdminManagementController {
             .fullName(user.getFullName())
             .phoneNumber(user.getPhoneNumber())
             .librarianCode(user.getStudentId())
+            .librarianCampus(user.getLibrarianCampus())
             .address(user.getAddress())
             .profilePictureUrl(user.getProfilePictureUrl())
             .status(user.getStatus().name())
@@ -509,14 +556,14 @@ public class AdminManagementController {
 
     private com.library.user.application.dto.response.AdminUserAccountResponse findAdminUserResponse(Long userId) {
         String sql = """
-            SELECT u.id, u.email, u.full_name, u.phone_number, u.student_id, u.faculty,
+            SELECT u.id, u.email, u.full_name, u.phone_number, u.student_id, u.librarian_campus, u.faculty,
                    u.address, u.profile_picture_url, u.status, u.is_verified, u.created_at, u.last_login_at,
                    COALESCE(string_agg(DISTINCT r.role_name, ',' ORDER BY r.role_name), '') AS roles
             FROM users u
             JOIN user_roles ur ON ur.user_id = u.id
             JOIN roles r ON r.id = ur.role_id
             WHERE u.id = :userId
-            GROUP BY u.id, u.email, u.full_name, u.phone_number, u.student_id, u.faculty,
+            GROUP BY u.id, u.email, u.full_name, u.phone_number, u.student_id, u.librarian_campus, u.faculty,
                      u.address, u.profile_picture_url, u.status, u.is_verified, u.created_at, u.last_login_at
             """;
         try {
@@ -529,6 +576,7 @@ public class AdminManagementController {
                     .fullName(rs.getString("full_name"))
                     .phoneNumber(rs.getString("phone_number"))
                     .studentId(rs.getString("student_id"))
+                    .librarianCampus(rs.getString("librarian_campus"))
                     .faculty(rs.getString("faculty"))
                     .address(rs.getString("address"))
                     .profilePictureUrl(rs.getString("profile_picture_url"))
@@ -606,6 +654,14 @@ public class AdminManagementController {
             return null;
         }
         return value.trim();
+    }
+
+    private String normalizeLibrarianCampus(String value) {
+        String normalized = requiredTrim(value, "Librarian campus is required").toUpperCase();
+        if (!Set.of("CAMPUS_1", "CAMPUS_2", "ALL").contains(normalized)) {
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Librarian campus must be CAMPUS_1, CAMPUS_2 or ALL");
+        }
+        return normalized;
     }
 
     private JsonNode toJsonNode(String rawJson) {

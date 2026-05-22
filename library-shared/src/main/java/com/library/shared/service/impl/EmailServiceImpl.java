@@ -1,17 +1,20 @@
 package com.library.shared.service.impl;
 
-import com.library.shared.service.EmailService;
-import com.library.shared.templates.EmailTemplates;
-import jakarta.mail.MessagingException;
-import jakarta.mail.internet.InternetAddress;
-import jakarta.mail.internet.MimeMessage;
 import java.io.UnsupportedEncodingException;
-import lombok.RequiredArgsConstructor;
-import lombok.extern.slf4j.Slf4j;
+
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.mail.javamail.JavaMailSender;
 import org.springframework.mail.javamail.MimeMessageHelper;
 import org.springframework.stereotype.Service;
+
+import com.library.shared.service.EmailService;
+import com.library.shared.templates.EmailTemplates;
+
+import jakarta.mail.MessagingException;
+import jakarta.mail.internet.InternetAddress;
+import jakarta.mail.internet.MimeMessage;
+import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 
 @Service
 @RequiredArgsConstructor
@@ -34,7 +37,7 @@ public class EmailServiceImpl implements EmailService {
     } else {
       messageHelper.setTo(to);
     }
-    messageHelper.setFrom(from, "SmartLibrary HCMUT");
+    messageHelper.setFrom(from, "Library74");
     messageHelper.setSubject(emailTemplates.getSubject());
 
     String content = emailTemplates.formatContent(fullName, link, link, link);
@@ -49,7 +52,7 @@ public class EmailServiceImpl implements EmailService {
     MimeMessage mimeMessage = mailSender.createMimeMessage();
     MimeMessageHelper messageHelper = new MimeMessageHelper(mimeMessage, true, "UTF-8");
     messageHelper.setTo(to);
-    messageHelper.setFrom(from, "SmartLibrary HCMUT");
+    messageHelper.setFrom(from, "Library74");
     messageHelper.setSubject(template.getSubject());
     messageHelper.setText(template.formatContent(args), true);
     mailSender.send(mimeMessage);

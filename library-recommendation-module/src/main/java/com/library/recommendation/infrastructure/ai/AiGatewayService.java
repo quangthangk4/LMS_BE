@@ -126,11 +126,51 @@ public class AiGatewayService implements AiPublicationProcessingPort {
     @Override
     @Async("interactionExecutor")
     public void processPublication(Long publicationId, String pdfUrl, boolean forceReprocess) {
+        requestPublicationProcessing(
+            publicationId,
+            pdfUrl,
+            forceReprocess,
+            "/api/v1/publications/process",
+            "AI publication process"
+        );
+    }
+
+    @Override
+    @Async("interactionExecutor")
+    public void vectorizePublication(Long publicationId, String pdfUrl, boolean forceReprocess) {
+        requestPublicationProcessing(
+            publicationId,
+            pdfUrl,
+            forceReprocess,
+            "/api/v1/publications/vectorize",
+            "AI publication vectorization"
+        );
+    }
+
+    @Override
+    @Async("interactionExecutor")
+    public void generatePublicationMetadata(Long publicationId, String pdfUrl, boolean forceReprocess) {
+        requestPublicationProcessing(
+            publicationId,
+            pdfUrl,
+            forceReprocess,
+            "/api/v1/publications/metadata",
+            "AI publication metadata generation"
+        );
+    }
+
+    private void requestPublicationProcessing(
+        Long publicationId,
+        String pdfUrl,
+        boolean forceReprocess,
+        String path,
+        String actionLabel
+    ) {
         try {
             AiProcessPublicationRequest request =
                 new AiProcessPublicationRequest(publicationId, pdfUrl, forceReprocess);
             String responseBody = processingRestClient.post()
-                .uri("/api/v1/publications/process")
+                .uri(path)
                 .contentType(MediaType.APPLICATION_JSON)
                 .accept(MediaType.APPLICATION_JSON, MediaType.APPLICATION_OCTET_STREAM)
                 .body(request)
@@ -147,10 +187,10 @@ public class AiGatewayService implements AiPublicationProcessingPort {
                 });
             AiProcessPublicationResult response = parseProcessPublicationResponse(responseBody);
 
-            log.info("AI publication process requested: publicationId={}, response={}", publicationId, response);
+            log.info("{} requested: publicationId={}, response={}", actionLabel, publicationId, response);
         } catch (Exception e) {
-            log.warn("AI publication process request failed for publicationId={}: {}", publicationId, e.getMessage());
-            markAiFailed(publicationId, "Không gửi được yêu cầu xử lý sang AI Service: " + e.getMessage());
+            log.warn("{} request failed for publicationId={}: {}", actionLabel, publicationId, e.getMessage());
+            markAiFailed(publicationId, "Không gửi được yêu cầu sang AI Service: " + e.getMessage());
         }
     }
 

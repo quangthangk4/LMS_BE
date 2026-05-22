@@ -67,6 +67,7 @@ public class SecurityConfig {
       "/api/v1/ai/semantic-search",
       "/api/ai/callback",
       "/api/v1/fines/payments/payos/webhook",
+      "/api/v1/contact-messages",
   };
 
   @Bean
