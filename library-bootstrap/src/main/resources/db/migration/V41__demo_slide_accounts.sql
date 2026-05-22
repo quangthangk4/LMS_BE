@@ -15,7 +15,7 @@ WITH demo_accounts AS (
 upserted AS (
     INSERT INTO users (
         id, created_at, updated_at, full_name, email, hashed_password,
-        status, ai_personalization_enabled, credit_score, date_of_birth,
+        status, credit_score, date_of_birth,
         phone_number, faculty, student_id, address, provider, provider_id,
         profile_picture_url, last_login_at, contribution_score, is_verified, librarian_campus
     )
@@ -27,7 +27,6 @@ upserted AS (
         email,
         '$2a$10$hgmel/e7IGHnvLry9joFjegPQIse5WPwNEwr2ybB1fs9fHNp6PjNy',
         'ACTIVE',
-        role_name = 'STUDENT',
         100,
         CASE WHEN role_name = 'STUDENT' THEN DATE '2004-01-01' ELSE DATE '1990-01-01' END,
         phone_number,
@@ -46,7 +45,6 @@ upserted AS (
         full_name = EXCLUDED.full_name,
         hashed_password = EXCLUDED.hashed_password,
         status = 'ACTIVE',
-        ai_personalization_enabled = EXCLUDED.ai_personalization_enabled,
         credit_score = 100,
         phone_number = EXCLUDED.phone_number,
         faculty = EXCLUDED.faculty,
