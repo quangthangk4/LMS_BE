@@ -56,6 +56,7 @@ class SearchPublicationsUseCaseImplTest {
             "Prentice Hall",
             "Robert C. Martin",
             "Software Engineering",
+            "Clean Code",
             4,
             1,
             4.5,
@@ -80,6 +81,7 @@ class SearchPublicationsUseCaseImplTest {
 
         assertThat(sql).contains("LOWER(p.title) LIKE :kw");
         assertThat(sql).contains("LEFT JOIN tag_translations tt_all ON tt_all.tag_id = t.id");
+        assertThat(sql).contains("AS tag_names");
         assertThat(sql).contains("LOWER(COALESCE(tt_all.name, '')) LIKE :kw");
         assertThat(sql).contains("LEFT JOIN category_translations ct_all ON ct_all.category_id = c.id");
         assertThat(sql).contains("LOWER(COALESCE(ct_all.name, '')) LIKE :kw");
@@ -123,6 +125,7 @@ class SearchPublicationsUseCaseImplTest {
                 when(rs.getString("publisher_name")).thenReturn("Addison-Wesley");
                 when(rs.getString("author_names")).thenReturn("Eric Evans");
                 when(rs.getString("category_names")).thenReturn("Architecture");
+                when(rs.getString("tag_names")).thenReturn("Domain Modeling, DDD");
                 when(rs.getInt("total_items")).thenReturn(3);
                 when(rs.getInt("available_items")).thenReturn(2);
                 when(rs.getDouble("avg_rating")).thenReturn(4.8);
@@ -138,6 +141,7 @@ class SearchPublicationsUseCaseImplTest {
         PublicSearchResult item = result.getContent().getFirst();
         assertThat(item.publicationId()).isEqualTo(99L);
         assertThat(item.title()).isEqualTo("Domain-Driven Design");
+        assertThat(item.tagNames()).isEqualTo("Domain Modeling, DDD");
         assertThat(item.availableItems()).isEqualTo(2);
         assertThat(item.avgRating()).isEqualTo(4.8);
         assertThat(item.viewCount()).isEqualTo(11L);

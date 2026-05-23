@@ -12,6 +12,7 @@ public record PublicSearchResult(
     String publisherName,
     String authorNames,
     String categoryNames,
+    String tagNames,
     int totalItems,
     int availableItems,
     double avgRating,

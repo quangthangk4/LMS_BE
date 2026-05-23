@@ -133,6 +133,7 @@ class PublicationControllerTest {
             "Prentice Hall",
             "Robert C. Martin",
             "Software Engineering",
+            "Clean Code",
             3,
             1,
             4.5,

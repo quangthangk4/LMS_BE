@@ -35,6 +35,11 @@ public class SearchPublicationsUseCaseImpl implements SearchPublicationsUseCase 
              JOIN categories c2 ON c2.id = pc2.category_id
              LEFT JOIN category_translations ct2 ON ct2.category_id = c2.id AND ct2.language_code = :uiLanguage
              WHERE pc2.publication_id = p.id)                                             AS category_names,
+            (SELECT STRING_AGG(COALESCE(NULLIF(tt2.name, ''), t2.name), ', ')
+             FROM publication_tags ptag2
+             JOIN tags t2 ON t2.id = ptag2.tag_id
+             LEFT JOIN tag_translations tt2 ON tt2.tag_id = t2.id AND tt2.language_code = :uiLanguage
+             WHERE ptag2.publication_id = p.id)                                            AS tag_names,
             (SELECT COUNT(*) FROM items i2 WHERE i2.publication_id = p.id)                AS total_items,
             (SELECT COUNT(*) FROM items i2 WHERE i2.publication_id = p.id
              AND i2.status = 'AVAILABLE')                                                 AS available_items,
@@ -82,6 +87,7 @@ public class SearchPublicationsUseCaseImpl implements SearchPublicationsUseCase 
                 rs.getString("publisher_name"),
                 rs.getString("author_names"),
                 rs.getString("category_names"),
+                rs.getString("tag_names"),
                 rs.getInt("total_items"),
                 rs.getInt("available_items"),
                 rs.getDouble("avg_rating"),
