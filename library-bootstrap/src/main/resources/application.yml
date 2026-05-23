@@ -113,7 +113,7 @@ ai:
     base-url: ${AI_GATEWAY_BASE_URL:http://localhost:8001}
     connect-timeout-ms: ${AI_GATEWAY_CONNECT_TIMEOUT_MS:1000}
     read-timeout-ms: ${AI_GATEWAY_READ_TIMEOUT_MS:5000}
-    processing-read-timeout-ms: ${AI_GATEWAY_PROCESSING_READ_TIMEOUT_MS:180000}
+    processing-read-timeout-ms: ${AI_GATEWAY_PROCESSING_READ_TIMEOUT_MS:900000}
   callback:
     secret: ${AI_CALLBACK_SECRET:}
     max-clock-skew-seconds: ${AI_CALLBACK_MAX_CLOCK_SKEW_SECONDS:300}
