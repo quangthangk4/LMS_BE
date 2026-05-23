@@ -219,13 +219,6 @@ public class AiGatewayService implements AiPublicationProcessingPort {
 
     private void markAiFailed(Long publicationId, String errorMessage) {
         try {
-            if (hasSuccessfulAiOutput(publicationId)) {
-                log.info(
-                    "Skip marking AI processing as failed because successful output already exists: publicationId={}",
-                    publicationId
-                );
-                return;
-            }
             jdbcTemplate.update(
                 """
                 INSERT INTO ai_engine.publication_etl_runs (
@@ -249,33 +242,6 @@ public class AiGatewayService implements AiPublicationProcessingPort {
             );
         } catch (Exception ex) {
             log.warn("Failed to persist AI processing failure for publicationId={}: {}", publicationId, ex.getMessage());
-        }
-    }
-
-    private boolean hasSuccessfulAiOutput(Long publicationId) {
-        try {
-            Boolean hasOutput = jdbcTemplate.queryForObject(
-                """
-                SELECT EXISTS (
-                    SELECT 1
-                    FROM ai_engine.publication_etl_runs
-                    WHERE publication_id = ?
-                      AND status = 'SUCCESS'
-                ) OR EXISTS (
-                    SELECT 1
-                    FROM ai_engine.publication_vectors
-                    WHERE publication_id = ?
-                    LIMIT 1
-                )
-                """,
-                Boolean.class,
-                publicationId,
-                publicationId
-            );
-            return Boolean.TRUE.equals(hasOutput);
-        } catch (Exception ex) {
-            log.warn("Failed to inspect AI processing output for publicationId={}: {}", publicationId, ex.getMessage());
-            return false;
         }
     }
 

@@ -141,8 +141,16 @@ public class SaveDocumentUrlUseCaseImpl implements SaveDocumentUrlUseCase {
             DO UPDATE SET
                 status = 'QUEUED',
                 error_message = NULL,
-                chunks_count = 0,
-                vectors_count = 0,
+                chunks_count = COALESCE(
+                    NULLIF(ai_engine.publication_etl_runs.chunks_count, 0),
+                    (SELECT COUNT(*) FROM ai_engine.publication_vectors WHERE publication_id = EXCLUDED.publication_id),
+                    0
+                ),
+                vectors_count = COALESCE(
+                    NULLIF(ai_engine.publication_etl_runs.vectors_count, 0),
+                    (SELECT COUNT(*) FROM ai_engine.publication_vectors WHERE publication_id = EXCLUDED.publication_id),
+                    0
+                ),
                 updated_at = CURRENT_TIMESTAMP
             """,
             publicationId
