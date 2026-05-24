@@ -4,6 +4,8 @@ import com.library.shared.constant.RoleConstants;
 import com.library.shared.dto.ApiResponseApp;
 import com.library.shared.kafka.KafkaTopics;
 import com.library.shared.kafka.event.NotificationMessage;
+import com.library.shared.service.EmailService;
+import com.library.shared.templates.EmailTemplates;
 import com.library.shared.util.RequiresAnyRole;
 import com.library.shared.util.RequiresAuthentication;
 import com.library.shared.util.RequiresRole;
@@ -21,6 +23,8 @@ import java.time.LocalDateTime;
 import java.util.List;
 import java.util.UUID;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.HttpStatus;
 import org.springframework.jdbc.core.RowMapper;
 import org.springframework.jdbc.core.namedparam.MapSqlParameterSource;
@@ -40,11 +44,16 @@ import org.springframework.web.server.ResponseStatusException;
 @RestController
 @RequestMapping("/api/v1/contact-messages")
 @RequiredArgsConstructor
+@Slf4j
 public class ContactMessageController {
 
   private final NamedParameterJdbcTemplate jdbcTemplate;
   private final SecurityEvaluator security;
   private final KafkaTemplate<String, Object> kafkaTemplate;
+  private final EmailService emailService;
+
+  @Value("${base.frontend-url:http://localhost:3000}")
+  private String frontendUrl;
 
   public record SubmitContactMessageRequest(
       @Size(max = 120) String name,
@@ -312,6 +321,7 @@ public class ContactMessageController {
     }
     if ("RESOLVED".equals(requestedStatus) && !"RESOLVED".equals(ticket.status())) {
       notifyTicketSender(response, "CONTACT_TICKET_RESOLVED");
+      sendResolvedSupportEmail(response);
     }
     if ("CLOSED".equals(requestedStatus) && !"CLOSED".equals(ticket.status())) {
       notifyTicketSender(response, "CONTACT_TICKET_CLOSED");
@@ -792,6 +802,39 @@ public class ContactMessageController {
         "/userpage/contact-tickets",
         ticket.id()
     ));
+  }
+
+  private void sendResolvedSupportEmail(ContactMessageResponse ticket) {
+    if (ticket.senderEmail() == null || ticket.senderEmail().isBlank()) {
+      return;
+    }
+    String actionUrl = frontendActionUrl("/userpage/contact-tickets");
+    try {
+      emailService.sendSupportEmailWithArgs(
+          ticket.senderEmail(),
+          EmailTemplates.CONTACT_RESOLVED,
+          ticket.senderName(),
+          ticket.ticketCode(),
+          ticket.subject(),
+          actionUrl,
+          actionUrl,
+          actionUrl
+      );
+    } catch (Exception e) {
+      log.error("Failed to send support resolved email for contact message {} to {}: {}",
+          ticket.id(), ticket.senderEmail(), e.getMessage());
+    }
+  }
+
+  private String frontendActionUrl(String path) {
+    String normalizedBase = frontendUrl.endsWith("/")
+        ? frontendUrl.substring(0, frontendUrl.length() - 1)
+        : frontendUrl;
+    String normalizedPath = path.startsWith("/") ? path : "/" + path;
+    if (normalizedBase.contains("#")) {
+      return normalizedBase + normalizedPath;
+    }
+    return normalizedBase + "/#" + normalizedPath;
   }
 
   private CurrentUser currentUser() {

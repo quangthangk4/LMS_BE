@@ -59,7 +59,7 @@ spring:
         spring.json.trusted.packages: "com.library.*"
 
   mail:
-    host: smtp.gmail.com
+    host: ${MAIL_HOST:smtp.zoho.com}
     port: 587
     username: ${MAIL_SENDER_USERNAME:}
     password: ${MAIL_SENDER_PASSWORD:}
@@ -93,6 +93,12 @@ spring:
             user-info-uri: https://openidconnect.googleapis.com/v1/userinfo
             user-name-attribute: sub
 
+library:
+  mail:
+    noreply-address: ${MAIL_NOREPLY_ADDRESS:noreply@library74.uk}
+    noreply-name: ${MAIL_NOREPLY_NAME:Library74 System}
+    support-address: ${MAIL_SUPPORT_ADDRESS:support@library74.uk}
+    support-name: ${MAIL_SUPPORT_NAME:Library74's Support Center}
 
 server:
   port: 8080

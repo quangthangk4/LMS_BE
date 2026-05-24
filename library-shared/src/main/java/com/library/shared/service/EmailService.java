@@ -11,4 +11,7 @@ public interface EmailService {
 
   void sendEmailWithArgs(String to, EmailTemplates template, Object... args)
       throws MessagingException, UnsupportedEncodingException;
+
+  void sendSupportEmailWithArgs(String to, EmailTemplates template, Object... args)
+      throws MessagingException, UnsupportedEncodingException;
 }

@@ -23,8 +23,17 @@ public class EmailServiceImpl implements EmailService {
 
   private final JavaMailSender mailSender;
 
-  @Value("${spring.mail.username}")
-  private String from;
+  @Value("${library.mail.noreply-address:${spring.mail.username}}")
+  private String noreplyAddress;
+
+  @Value("${library.mail.noreply-name:Library74 System}")
+  private String noreplyName;
+
+  @Value("${library.mail.support-address:support@library74.uk}")
+  private String supportAddress;
+
+  @Value("${library.mail.support-name:Library74's Support Center}")
+  private String supportName;
 
   @Override
   public void sendEmail(String to, String fullName, String link, EmailTemplates emailTemplates)
@@ -37,7 +46,7 @@ public class EmailServiceImpl implements EmailService {
     } else {
       messageHelper.setTo(to);
     }
-    messageHelper.setFrom(from, "Library74");
+    messageHelper.setFrom(noreplyAddress, noreplyName);
     messageHelper.setSubject(emailTemplates.getSubject());
 
     String content = emailTemplates.formatContent(fullName, link, link, link);
@@ -52,10 +61,23 @@ public class EmailServiceImpl implements EmailService {
     MimeMessage mimeMessage = mailSender.createMimeMessage();
     MimeMessageHelper messageHelper = new MimeMessageHelper(mimeMessage, true, "UTF-8");
     messageHelper.setTo(to);
-    messageHelper.setFrom(from, "Library74");
+    messageHelper.setFrom(noreplyAddress, noreplyName);
     messageHelper.setSubject(template.getSubject());
     messageHelper.setText(template.formatContent(args), true);
     mailSender.send(mimeMessage);
     log.info("Sent email to {} with subject: {}", to, template.getSubject());
+  }
+
+  @Override
+  public void sendSupportEmailWithArgs(String to, EmailTemplates template, Object... args)
+      throws MessagingException, UnsupportedEncodingException {
+    MimeMessage mimeMessage = mailSender.createMimeMessage();
+    MimeMessageHelper messageHelper = new MimeMessageHelper(mimeMessage, true, "UTF-8");
+    messageHelper.setTo(to);
+    messageHelper.setFrom(supportAddress, supportName);
+    messageHelper.setSubject(template.getSubject());
+    messageHelper.setText(template.formatContent(args), true);
+    mailSender.send(mimeMessage);
+    log.info("Sent support email to {} with subject: {}", to, template.getSubject());
   }
 }
