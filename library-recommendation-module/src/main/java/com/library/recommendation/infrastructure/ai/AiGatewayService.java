@@ -124,7 +124,7 @@ public class AiGatewayService implements AiPublicationProcessingPort {
     }
 
     @Override
-    @Async("interactionExecutor")
+    @Async("aiProcessingExecutor")
     public void processPublication(Long publicationId, String pdfUrl, boolean forceReprocess) {
         requestPublicationProcessing(
             publicationId,
@@ -136,7 +136,7 @@ public class AiGatewayService implements AiPublicationProcessingPort {
     }
 
     @Override
-    @Async("interactionExecutor")
+    @Async("aiProcessingExecutor")
     public void vectorizePublication(Long publicationId, String pdfUrl, boolean forceReprocess) {
         requestPublicationProcessing(
             publicationId,
@@ -148,7 +148,7 @@ public class AiGatewayService implements AiPublicationProcessingPort {
     }
 
     @Override
-    @Async("interactionExecutor")
+    @Async("aiProcessingExecutor")
     public void generatePublicationMetadata(Long publicationId, String pdfUrl, boolean forceReprocess) {
         requestPublicationProcessing(
             publicationId,
