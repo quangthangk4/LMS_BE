@@ -39,6 +39,7 @@ public class SystemReviewController {
           sr.rating,
           sr.comment,
           COALESCE(u.full_name, sr.reviewer_name) AS full_name,
+          u.student_id AS student_id,
           u.faculty AS faculty,
           COALESCE(
               NULLIF(sr.reviewer_role, ''),
@@ -141,7 +142,7 @@ public class SystemReviewController {
     Long userId = securityEvaluator.getCurrentUserId();
     Map<String, Object> user = jdbcTemplate.queryForMap(
         """
-        SELECT id, full_name, faculty, profile_picture_url
+        SELECT id, full_name, student_id, faculty, profile_picture_url
         FROM users
         WHERE id = :userId
         """,
@@ -235,6 +236,7 @@ public class SystemReviewController {
         .comment(rs.getString("comment"))
         .fullName(rs.getString("full_name"))
         .role(rs.getString("reviewer_role"))
+        .studentId(rs.getString("student_id"))
         .faculty(rs.getString("faculty"))
         .profilePictureUrl(rs.getString("profile_picture_url"))
         .published(rs.getBoolean("is_published"))

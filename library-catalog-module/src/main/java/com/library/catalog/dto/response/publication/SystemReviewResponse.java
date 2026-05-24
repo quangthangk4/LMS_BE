@@ -20,6 +20,7 @@ public class SystemReviewResponse {
   private String comment;
   private String fullName;
   private String role;
+  private String studentId;
   private String faculty;
   private String profilePictureUrl;
   private boolean published;
