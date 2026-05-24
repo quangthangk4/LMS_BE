@@ -5,6 +5,7 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import com.library.shared.constant.RoleConstants;
 import com.library.shared.util.RequiresRole;
 import com.library.shared.util.TsIdGenerator;
+import com.library.user.application.dto.request.CreateManagedUserRequest;
 import com.library.user.domain.entities.UserStatus;
 import com.library.user.domain.enums.FacultyEnum;
 import com.library.user.application.dto.request.AdminUpdateUserRequest;
@@ -268,6 +269,166 @@ public class AdminManagementController {
         ));
     }
 
+    @PostMapping("/users")
+    @RequiresRole(RoleConstants.ADMIN)
+    @Operation(summary = "Create a student account without email verification")
+    public com.library.shared.dto.ApiResponseApp<com.library.user.application.dto.response.AdminUserAccountResponse> createManagedUser(
+        @Valid @RequestBody CreateManagedUserRequest request) {
+        return createManagedUserAccount(
+            request.fullName(),
+            request.studentId(),
+            request.email(),
+            request.password(),
+            request.confirmPassword(),
+            request.faculty(),
+            request.phoneNumber(),
+            request.address(),
+            request.profilePictureUrl(),
+            null
+        );
+    }
+
+    @PostMapping(value = "/users", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
+    @RequiresRole(RoleConstants.ADMIN)
+    @Operation(summary = "Create a student account with uploaded avatar and without email verification")
+    public com.library.shared.dto.ApiResponseApp<com.library.user.application.dto.response.AdminUserAccountResponse> createManagedUserWithAvatar(
+        @RequestParam("fullName") String fullName,
+        @RequestParam("studentId") String studentId,
+        @RequestParam("email") String email,
+        @RequestParam("password") String password,
+        @RequestParam("confirmPassword") String confirmPassword,
+        @RequestParam("faculty") String faculty,
+        @RequestParam(value = "phoneNumber", required = false) String phoneNumber,
+        @RequestParam(value = "address", required = false) String address,
+        @RequestParam("avatar") MultipartFile avatar) {
+        return createManagedUserAccount(fullName, studentId, email, password, confirmPassword, faculty, phoneNumber, address, null, avatar);
+    }
+
+    private com.library.shared.dto.ApiResponseApp<com.library.user.application.dto.response.AdminUserAccountResponse> createManagedUserAccount(
+        String rawFullName,
+        String rawStudentId,
+        String rawEmail,
+        String rawPassword,
+        String rawConfirmPassword,
+        String rawFaculty,
+        String rawPhoneNumber,
+        String rawAddress,
+        String rawProfilePictureUrl,
+        MultipartFile avatar
+    ) {
+        String fullName = requiredTrim(rawFullName, "Full name is required");
+        String studentId = requiredTrim(rawStudentId, "Student ID is required");
+        String email = requiredTrim(rawEmail, "Email is required").toLowerCase();
+        String password = requiredTrim(rawPassword, "Password is required");
+        String confirmPassword = requiredTrim(rawConfirmPassword, "Confirm password is required");
+        if (!password.equals(confirmPassword)) {
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Password confirmation does not match");
+        }
+        if (!studentId.matches("\\d{7}")) {
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Student ID must be 7 digits");
+        }
+        FacultyEnum faculty;
+        try {
+            faculty = FacultyEnum.valueOf(requiredTrim(rawFaculty, "Faculty is required"));
+        } catch (Exception e) {
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Invalid faculty");
+        }
+        if (avatar != null && avatar.isEmpty()) {
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Avatar file is required");
+        }
+        if (userRepository.existsByEmail(email)) {
+            throw new ResponseStatusException(HttpStatus.CONFLICT, "Email already exists");
+        }
+        Integer duplicateStudentId = jdbcTemplate.queryForObject(
+            """
+            SELECT COUNT(*)
+            FROM users u
+            JOIN user_roles ur ON ur.user_id = u.id
+            JOIN roles r ON r.id = ur.role_id
+            WHERE r.role_name = :role
+              AND u.student_id = :studentId
+            """,
+            new MapSqlParameterSource()
+                .addValue("role", RoleConstants.STUDENT)
+                .addValue("studentId", studentId),
+            Integer.class
+        );
+        if (duplicateStudentId != null && duplicateStudentId > 0) {
+            throw new ResponseStatusException(HttpStatus.CONFLICT, "Student ID already exists");
+        }
+        RoleEntity studentRole = roleRepository.findByRoleName(RoleConstants.STUDENT)
+            .orElseThrow(() -> new ResponseStatusException(HttpStatus.INTERNAL_SERVER_ERROR, "STUDENT role not found"));
+
+        com.library.user.infrastructure.persistence.entity.UserEntity user = com.library.user.infrastructure.persistence.entity.UserEntity.builder()
+            .email(email)
+            .fullName(fullName)
+            .studentId(studentId)
+            .faculty(faculty)
+            .phoneNumber(trimToNull(rawPhoneNumber))
+            .address(trimToNull(rawAddress))
+            .profilePictureUrl(trimToNull(rawProfilePictureUrl))
+            .hashedPassword(passwordHasher.hash(password))
+            .status(UserStatus.ACTIVE)
+            .verified(true)
+            .creditScore(100)
+            .contributionScore(0)
+            .build();
+        user.setId(TsIdGenerator.next());
+        if (avatar != null) {
+            user.setProfilePictureUrl(storagePort.upload(avatar, "avatars/" + user.getId()));
+        }
+        user.getRoles().add(studentRole);
+        com.library.user.infrastructure.persistence.entity.UserEntity saved = userRepository.save(user);
+
+        Long adminId = security.getCurrentUserId();
+        auditLogService.log(
+            adminId,
+            RoleConstants.ADMIN,
+            "CREATE_USER",
+            "users",
+            saved.getId(),
+            "Admin created user account " + saved.getEmail(),
+            Map.of("email", saved.getEmail(), "fullName", saved.getFullName(), "studentId", studentId, "faculty", faculty.name())
+        );
+
+        return com.library.shared.dto.ApiResponseApp.created("User account created", findAdminUserResponse(saved.getId()));
+    }
+
+    @PostMapping(value = "/users/{userId}/avatar", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
+    @RequiresRole(RoleConstants.ADMIN)
+    @Operation(summary = "Upload avatar for a managed student or librarian account")
+    public com.library.shared.dto.ApiResponseApp<com.library.user.application.dto.response.AdminUserAccountResponse> uploadManagedUserAvatar(
+        @PathVariable("userId") Long userId,
+        @RequestParam("avatar") MultipartFile avatar) {
+        if (avatar == null || avatar.isEmpty()) {
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Avatar file is required");
+        }
+        com.library.user.infrastructure.persistence.entity.UserEntity user = userRepository.findByIdWithRoles(userId)
+            .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "User not found"));
+        boolean isManagedAccount = user.getRoles().stream()
+            .anyMatch(role -> ADMIN_MANAGED_ROLES.contains(role.getRoleName()));
+        if (!isManagedAccount) {
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Only student and librarian accounts can be updated here");
+        }
+
+        String avatarUrl = storagePort.upload(avatar, "avatars/" + user.getId());
+        user.setProfilePictureUrl(avatarUrl);
+        com.library.user.infrastructure.persistence.entity.UserEntity saved = userRepository.save(user);
+
+        Long adminId = security.getCurrentUserId();
+        auditLogService.log(
+            adminId,
+            RoleConstants.ADMIN,
+            "UPLOAD_USER_AVATAR",
+            "users",
+            saved.getId(),
+            "Admin uploaded avatar for " + saved.getEmail(),
+            Map.of("email", saved.getEmail(), "roles", saved.getRoles().stream().map(RoleEntity::getRoleName).sorted().toList())
+        );
+
+        return com.library.shared.dto.ApiResponseApp.success("Account avatar updated", findAdminUserResponse(saved.getId()));
+    }
+
     @PatchMapping("/users/{userId}/status")
     @RequiresRole(RoleConstants.ADMIN)
     @Operation(summary = "Update account status")
@@ -396,7 +557,9 @@ public class AdminManagementController {
         user.setLibrarianCampus(librarianCampus);
         user.setPhoneNumber(phoneNumber);
         user.setAddress(address);
-        user.setProfilePictureUrl(avatarUrl);
+        if (avatarUrl != null) {
+            user.setProfilePictureUrl(avatarUrl);
+        }
         user.setFaculty(faculty);
         com.library.user.infrastructure.persistence.entity.UserEntity saved = userRepository.save(user);
 
