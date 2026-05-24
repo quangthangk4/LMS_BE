@@ -13,6 +13,7 @@ import com.library.user.infrastructure.persistence.entity.RoleEntity;
 import io.swagger.v3.oas.annotations.Operation;
 import jakarta.validation.Valid;
 import java.sql.Timestamp;
+import java.time.Instant;
 import java.util.Arrays;
 import java.util.List;
 import java.util.Map;
@@ -154,6 +155,7 @@ public class AdminManagementController {
             .profilePictureUrl(rawProfilePictureUrl == null ? null : rawProfilePictureUrl.trim())
             .hashedPassword(passwordHasher.hash(rawPassword))
             .status(UserStatus.ACTIVE)
+            .accountActivatedAt(Instant.now())
             .creditScore(100)
             .contributionScore(0)
             .build();
@@ -215,7 +217,7 @@ public class AdminManagementController {
 
         StringBuilder sql = new StringBuilder("""
             SELECT u.id, u.email, u.full_name, u.phone_number, u.student_id, u.librarian_campus, u.faculty,
-                   u.address, u.profile_picture_url, u.status, u.is_verified, u.created_at, u.last_login_at,
+                   u.address, u.profile_picture_url, u.status, u.is_verified, u.created_at, u.account_activated_at, u.last_login_at,
                    COALESCE(string_agg(DISTINCT r.role_name, ',' ORDER BY r.role_name), '') AS roles
             FROM users u
             JOIN user_roles ur_filter ON ur_filter.user_id = u.id
@@ -243,7 +245,7 @@ public class AdminManagementController {
         }
         sql.append("""
             GROUP BY u.id, u.email, u.full_name, u.phone_number, u.student_id, u.librarian_campus, u.faculty,
-                     u.address, u.profile_picture_url, u.status, u.is_verified, u.created_at, u.last_login_at
+                     u.address, u.profile_picture_url, u.status, u.is_verified, u.created_at, u.account_activated_at, u.last_login_at
             ORDER BY u.created_at DESC NULLS LAST, u.id DESC
             """);
 
@@ -264,6 +266,7 @@ public class AdminManagementController {
                 .verified(rs.getBoolean("is_verified"))
                 .roles(splitRoles(rs.getString("roles")))
                 .createdAt(rs.getTimestamp("created_at") != null ? rs.getTimestamp("created_at").toInstant() : null)
+                .accountActivatedAt(rs.getTimestamp("account_activated_at") != null ? rs.getTimestamp("account_activated_at").toInstant() : null)
                 .lastLoginAt(rs.getTimestamp("last_login_at") != null ? rs.getTimestamp("last_login_at").toLocalDateTime() : null)
                 .build()
         ));
@@ -370,6 +373,7 @@ public class AdminManagementController {
             .hashedPassword(passwordHasher.hash(password))
             .status(UserStatus.ACTIVE)
             .verified(true)
+            .accountActivatedAt(Instant.now())
             .creditScore(100)
             .contributionScore(0)
             .build();
@@ -447,6 +451,9 @@ public class AdminManagementController {
 
         UserStatus oldStatus = user.getStatus();
         user.setStatus(newStatus);
+        if (newStatus == UserStatus.ACTIVE && oldStatus != UserStatus.ACTIVE) {
+            user.setAccountActivatedAt(Instant.now());
+        }
         com.library.user.infrastructure.persistence.entity.UserEntity saved = userRepository.save(user);
 
         Long adminId = security.getCurrentUserId();
@@ -713,6 +720,7 @@ public class AdminManagementController {
             .status(user.getStatus().name())
             .verified(user.isVerified())
             .createdAt(user.getCreatedAt())
+            .accountActivatedAt(user.getAccountActivatedAt())
             .lastLoginAt(user.getLastLoginAt())
             .build();
     }
@@ -720,14 +728,14 @@ public class AdminManagementController {
     private com.library.user.application.dto.response.AdminUserAccountResponse findAdminUserResponse(Long userId) {
         String sql = """
             SELECT u.id, u.email, u.full_name, u.phone_number, u.student_id, u.librarian_campus, u.faculty,
-                   u.address, u.profile_picture_url, u.status, u.is_verified, u.created_at, u.last_login_at,
+                   u.address, u.profile_picture_url, u.status, u.is_verified, u.created_at, u.account_activated_at, u.last_login_at,
                    COALESCE(string_agg(DISTINCT r.role_name, ',' ORDER BY r.role_name), '') AS roles
             FROM users u
             JOIN user_roles ur ON ur.user_id = u.id
             JOIN roles r ON r.id = ur.role_id
             WHERE u.id = :userId
             GROUP BY u.id, u.email, u.full_name, u.phone_number, u.student_id, u.librarian_campus, u.faculty,
-                     u.address, u.profile_picture_url, u.status, u.is_verified, u.created_at, u.last_login_at
+                     u.address, u.profile_picture_url, u.status, u.is_verified, u.created_at, u.account_activated_at, u.last_login_at
             """;
         try {
             return jdbcTemplate.queryForObject(
@@ -747,6 +755,7 @@ public class AdminManagementController {
                     .verified(rs.getBoolean("is_verified"))
                     .roles(splitRoles(rs.getString("roles")))
                     .createdAt(rs.getTimestamp("created_at") != null ? rs.getTimestamp("created_at").toInstant() : null)
+                    .accountActivatedAt(rs.getTimestamp("account_activated_at") != null ? rs.getTimestamp("account_activated_at").toInstant() : null)
                     .lastLoginAt(rs.getTimestamp("last_login_at") != null ? rs.getTimestamp("last_login_at").toLocalDateTime() : null)
                     .build()
             );

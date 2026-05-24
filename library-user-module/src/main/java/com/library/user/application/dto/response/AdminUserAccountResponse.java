@@ -23,6 +23,7 @@ public record AdminUserAccountResponse(
     boolean verified,
     List<String> roles,
     Instant createdAt,
+    Instant accountActivatedAt,
     LocalDateTime lastLoginAt
 ) {
 }

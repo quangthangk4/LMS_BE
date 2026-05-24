@@ -20,6 +20,7 @@ public record LibrarianAccountResponse(
     String status,
     boolean verified,
     Instant createdAt,
+    Instant accountActivatedAt,
     LocalDateTime lastLoginAt
 ) {
 }

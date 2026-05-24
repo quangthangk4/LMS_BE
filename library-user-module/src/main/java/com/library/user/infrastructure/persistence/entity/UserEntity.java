@@ -8,6 +8,7 @@ import lombok.*;
 
 import java.time.LocalDate;
 import java.time.LocalDateTime;
+import java.time.Instant;
 import java.util.HashSet;
 import java.util.Set;
 
@@ -63,6 +64,9 @@ public class UserEntity extends BaseEntity {
     private FacultyEnum faculty;
 
     private LocalDateTime lastLoginAt;
+
+    @Column(name = "account_activated_at")
+    private Instant accountActivatedAt;
 
     private String provider;
 
