@@ -13,13 +13,16 @@ import com.library.shared.exception.AppException;
 import com.library.shared.exception.ErrorCode;
 import com.library.shared.kafka.KafkaTopics;
 import com.library.shared.kafka.event.NotificationMessage;
+import com.library.shared.service.LibrarianNotificationService;
 import com.library.shared.util.TsIdGenerator;
 import java.time.Instant;
 import java.time.LocalDate;
 import java.time.ZoneId;
 import java.time.format.DateTimeFormatter;
+import java.util.Map;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.jdbc.core.namedparam.NamedParameterJdbcTemplate;
 import org.springframework.kafka.core.KafkaTemplate;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -37,6 +40,8 @@ public class ConfirmReservationPickupUseCaseImpl implements ConfirmReservationPi
     private final com.library.shared.port.ItemStatusPort itemStatusPort;
     private final KafkaTemplate<String, Object> kafkaTemplate;
     private final CirculationPolicyService policyService;
+    private final NamedParameterJdbcTemplate jdbcTemplate;
+    private final LibrarianNotificationService librarianNotificationService;
 
     @Override
     @Transactional
@@ -93,6 +98,19 @@ public class ConfirmReservationPickupUseCaseImpl implements ConfirmReservationPi
             "/userpage/my-books?highlight=" + transaction.getId(),
             transaction.getId()
         ));
+        Map<String, Object> student = jdbcTemplate.queryForMap(
+            "SELECT full_name, student_id FROM users WHERE id = :userId",
+            Map.of("userId", reservation.getUserId())
+        );
+        librarianNotificationService.notifyAll(
+            "LIB_CIRC_PICKUP",
+            "Sinh viên đã nhận sách đặt trước",
+            String.format("%s (%s) đã nhận '%s' - bản sao %s từ lượt đặt trước. Hạn trả: %s.",
+                student.get("full_name"), student.get("student_id"), item.publicationTitle(), item.barcode(),
+                dueDate.format(DUE_DATE_FMT)),
+            "/librarianpage/transactions?highlight=" + transaction.getId(),
+            transaction.getId()
+        );
 
         log.info("Reservation pickup confirmed: reservationId={}, transactionId={}, librarianId={}", 
             reservationId, transaction.getId(), librarianId);

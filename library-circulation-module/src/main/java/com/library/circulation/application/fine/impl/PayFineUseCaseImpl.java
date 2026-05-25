@@ -11,6 +11,7 @@ import com.library.shared.exception.ErrorCode;
 import com.library.shared.kafka.KafkaTopics;
 import com.library.shared.kafka.event.LibraryEmailMessage;
 import com.library.shared.kafka.event.NotificationMessage;
+import com.library.shared.service.LibrarianNotificationService;
 import java.math.BigDecimal;
 import java.sql.Timestamp;
 import java.time.Instant;
@@ -43,6 +44,7 @@ public class PayFineUseCaseImpl implements PayFineUseCase {
     private final NamedParameterJdbcTemplate jdbcTemplate;
     private final KafkaTemplate<String, Object> kafkaTemplate;
     private final com.library.shared.service.AuditLogService auditLogService;
+    private final LibrarianNotificationService librarianNotificationService;
 
     @Override
     @Transactional
@@ -70,6 +72,10 @@ public class PayFineUseCaseImpl implements PayFineUseCase {
         Long userId             = ((Number) jdbcTemplate.queryForObject(
             "SELECT t.user_id FROM borrowing_transactions t WHERE t.id = :txId",
             Map.of("txId", ((Number) row.get("transaction_id")).longValue()), Long.class)).longValue();
+        Map<String, Object> student = jdbcTemplate.queryForMap(
+            "SELECT full_name, student_id FROM users WHERE id = :userId",
+            Map.of("userId", userId)
+        );
 
         // In-app notification
         kafkaTemplate.send(KafkaTopics.NOTIFICATION_SEND, new NotificationMessage(
@@ -96,6 +102,15 @@ public class PayFineUseCaseImpl implements PayFineUseCase {
             fineId,
             "Librarian marked one fine as paid",
             Map.of("fineId", fineId, "transactionId", row.get("transaction_id"), "amount", fineAmount)
+        );
+        librarianNotificationService.notifyAll(
+            "LIB_FINE_PAID",
+            "Đã thu phí phạt",
+            String.format("%s (%s) đã thanh toán phí phạt %sđ cho '%s'. Phương thức: tiền mặt/thủ thư ghi nhận.",
+                student.get("full_name"), student.get("student_id"),
+                new java.text.DecimalFormat("#,###").format(fineAmount), publicationTitle),
+            "/librarianpage/transactions?highlight=" + row.get("transaction_id"),
+            fineId
         );
 
         return FineResponse.builder()

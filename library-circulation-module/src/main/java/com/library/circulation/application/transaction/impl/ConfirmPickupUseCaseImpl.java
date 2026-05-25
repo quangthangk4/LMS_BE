@@ -13,13 +13,16 @@ import com.library.shared.exception.AppException;
 import com.library.shared.exception.ErrorCode;
 import com.library.shared.kafka.KafkaTopics;
 import com.library.shared.kafka.event.NotificationMessage;
+import com.library.shared.service.LibrarianNotificationService;
 import com.library.user.domain.valueobject.UserId;
+import java.util.Map;
 import java.time.LocalDate;
 import java.time.ZoneId;
 import java.time.format.DateTimeFormatter;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.kafka.core.KafkaTemplate;
+import org.springframework.jdbc.core.namedparam.NamedParameterJdbcTemplate;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -37,6 +40,8 @@ public class ConfirmPickupUseCaseImpl implements ConfirmPickupUseCase {
     private final KafkaTemplate<String, Object> kafkaTemplate;
     private final com.library.shared.port.UserInteractionPort userInteractionPort;
     private final CirculationPolicyService policyService;
+    private final NamedParameterJdbcTemplate jdbcTemplate;
+    private final LibrarianNotificationService librarianNotificationService;
 
     @Override
     @Transactional
@@ -73,6 +78,19 @@ public class ConfirmPickupUseCaseImpl implements ConfirmPickupUseCase {
         ));
 
         userInteractionPort.record(entity.getUserId(), item.publicationId(), com.library.shared.port.UserInteractionPort.TYPE_BORROW);
+        Map<String, Object> student = jdbcTemplate.queryForMap(
+            "SELECT full_name, student_id FROM users WHERE id = :userId",
+            Map.of("userId", entity.getUserId())
+        );
+        librarianNotificationService.notifyAll(
+            "LIB_CIRC_PICKUP",
+            "Sinh viên đã nhận sách",
+            String.format("%s (%s) đã nhận '%s' - bản sao %s. Hạn trả: %s.",
+                student.get("full_name"), student.get("student_id"), item.publicationTitle(), item.barcode(),
+                entity.getDueDate().format(DUE_DATE_FMT)),
+            "/librarianpage/transactions?highlight=" + entity.getId(),
+            entity.getId()
+        );
         log.info("Pickup confirmed: transactionId={}, librarianId={}", transactionId, librarianId);
 
         return BorrowTransactionResponse.builder()

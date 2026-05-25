@@ -4,6 +4,7 @@ import com.library.circulation.application.policy.CirculationPolicy;
 import com.library.circulation.application.policy.CirculationPolicyService;
 import com.library.circulation.dto.request.UpdateCirculationPolicyRequest;
 import com.library.shared.constant.RoleConstants;
+import com.library.shared.service.LibrarianNotificationService;
 import java.sql.Timestamp;
 import java.time.Instant;
 import java.util.Map;
@@ -47,6 +48,7 @@ public class JdbcCirculationPolicyService implements CirculationPolicyService {
 
     private final NamedParameterJdbcTemplate jdbcTemplate;
     private final com.library.shared.service.AuditLogService auditLogService;
+    private final LibrarianNotificationService librarianNotificationService;
 
     @Override
     public CirculationPolicy getPolicy() {
@@ -92,6 +94,21 @@ public class JdbcCirculationPolicyService implements CirculationPolicyService {
                 "overdueFinePerDay", request.overdueFinePerDay(),
                 "blockBorrowWhenUnpaidFines", request.blockBorrowWhenUnpaidFines()
             )
+        );
+        librarianNotificationService.notifyAll(
+            "LIB_POLICY_UPDATED",
+            "Admin đã cập nhật quy định mượn trả",
+            String.format(
+                "Quy định mới: nhận sách trong %d giờ, mượn %d ngày, tối đa %d sách/%d đặt trước, phí trễ hạn %sđ/ngày, chặn nợ phí: %s.",
+                request.pickupDeadlineHours(),
+                request.defaultLoanDays(),
+                request.maxActiveBorrows(),
+                request.maxActiveReservations(),
+                request.overdueFinePerDay(),
+                Boolean.TRUE.equals(request.blockBorrowWhenUnpaidFines()) ? "bật" : "tắt"
+            ),
+            "/librarianpage/settings",
+            1L
         );
         return getPolicy();
     }

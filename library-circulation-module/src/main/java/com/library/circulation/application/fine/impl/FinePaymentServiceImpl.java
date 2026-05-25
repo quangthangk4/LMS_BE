@@ -10,6 +10,7 @@ import com.library.shared.exception.AppException;
 import com.library.shared.exception.ErrorCode;
 import com.library.shared.kafka.KafkaTopics;
 import com.library.shared.kafka.event.NotificationMessage;
+import com.library.shared.service.LibrarianNotificationService;
 import com.library.shared.util.TsIdGenerator;
 import java.math.BigDecimal;
 import java.time.Instant;
@@ -106,6 +107,7 @@ public class FinePaymentServiceImpl implements FinePaymentService {
     private final ObjectMapper objectMapper;
     private final KafkaTemplate<String, Object> kafkaTemplate;
     private final com.library.shared.service.AuditLogService auditLogService;
+    private final LibrarianNotificationService librarianNotificationService;
 
     @Value("${base.frontend-url:http://localhost:3000}")
     private String frontendUrl;
@@ -283,6 +285,14 @@ public class FinePaymentServiceImpl implements FinePaymentService {
             orderCode,
             "Fine payment order completed",
             Map.of("orderCode", orderCode, "paidCount", updated, "provider", "PAYOS")
+        );
+        librarianNotificationService.notifyAll(
+            "LIB_FINE_PAID",
+            "Đã thu phí phạt qua PayOS",
+            String.format(Locale.ROOT, "Sinh viên %s đã thanh toán %d khoản phí phạt, tổng %sđ. Phương thức: PayOS/chuyển khoản.",
+                order.get("student_id"), updated, new java.text.DecimalFormat("#,###").format(expectedAmount)),
+            "/librarianpage/transactions",
+            orderCode
         );
         log.info("payOS fine payment completed: orderCode={}, paidFines={}", orderCode, updated);
         return updated;

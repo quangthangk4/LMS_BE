@@ -5,6 +5,7 @@ import com.library.catalog.domain.valueobject.ISBN;
 import com.library.catalog.dto.request.publication.CreatePublicationRequest;
 import com.library.catalog.infrastructure.persistence.entity.PublicationEntity;
 import com.library.catalog.infrastructure.persistence.repository.PublicationJpaRepository;
+import com.library.shared.service.LibrarianNotificationService;
 import com.library.shared.util.TsIdGenerator;
 import lombok.RequiredArgsConstructor;
 import org.springframework.jdbc.core.JdbcTemplate;
@@ -17,6 +18,7 @@ public class CreatePublicationUseCaseImpl implements CreatePublicationUseCase {
 
     private final PublicationJpaRepository publicationJpaRepository;
     private final JdbcTemplate jdbcTemplate;
+    private final LibrarianNotificationService librarianNotificationService;
 
     @Override
     @Transactional
@@ -49,6 +51,13 @@ public class CreatePublicationUseCaseImpl implements CreatePublicationUseCase {
         insertAuthors(entity.getId(), request.authorIds());
         insertCategories(entity.getId(), request.categoryIds());
         insertTags(entity.getId(), request.tagIds());
+        librarianNotificationService.notifyAll(
+            "LIB_BOOK_CREATED",
+            "Đã thêm đầu sách",
+            String.format("Đầu sách '%s' đã được thêm vào hệ thống.", entity.getTitle()),
+            "/librarianpage/books/" + entity.getId(),
+            entity.getId()
+        );
 
         return entity.getId();
     }

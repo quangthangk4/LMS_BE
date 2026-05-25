@@ -6,6 +6,7 @@ import com.library.recommendation.infrastructure.persistence.entity.RatingEntity
 import com.library.recommendation.infrastructure.persistence.repository.RatingJpaRepository;
 import com.library.shared.exception.AppException;
 import com.library.shared.exception.ErrorCode;
+import com.library.shared.service.LibrarianNotificationService;
 import com.library.shared.util.TsIdGenerator;
 import lombok.RequiredArgsConstructor;
 import org.springframework.dao.DataIntegrityViolationException;
@@ -22,6 +23,7 @@ public class CreatePublicationRatingUseCaseImpl implements CreatePublicationRati
 
   private final RatingJpaRepository ratingJpaRepository;
   private final JdbcTemplate jdbcTemplate;
+  private final LibrarianNotificationService librarianNotificationService;
 
   @Override
   @Transactional
@@ -42,6 +44,24 @@ public class CreatePublicationRatingUseCaseImpl implements CreatePublicationRati
       jdbcTemplate.update(
           "UPDATE users SET contribution_score = contribution_score + 5 WHERE id = ?",
           userId
+      );
+      Map<String, Object> context = jdbcTemplate.queryForMap(
+          """
+          SELECT u.full_name, u.student_id, p.title
+          FROM users u
+          JOIN publications p ON p.id = ?
+          WHERE u.id = ?
+          """,
+          publicationId,
+          userId
+      );
+      librarianNotificationService.notifyAll(
+          "LIB_REVIEW_NEW",
+          "Sinh viên đánh giá sách",
+          String.format("%s (%s) đã đánh giá %d sao cho '%s'.",
+              context.get("full_name"), context.get("student_id"), request.getStar(), context.get("title")),
+          "/librarianpage/public/book/" + publicationId + "?review=" + rating.getId(),
+          rating.getId()
       );
     } catch (DataIntegrityViolationException e) {
       throw new AppException(ErrorCode.RATING_ALREADY_EXISTS);

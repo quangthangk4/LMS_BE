@@ -13,6 +13,7 @@ import com.library.shared.exception.AppException;
 import com.library.shared.exception.ErrorCode;
 import com.library.shared.kafka.KafkaTopics;
 import com.library.shared.kafka.event.NotificationMessage;
+import com.library.shared.service.LibrarianNotificationService;
 import com.library.shared.util.TsIdGenerator;
 import com.library.user.domain.valueobject.UserId;
 import java.time.LocalDate;
@@ -36,7 +37,7 @@ public class DirectBorrowUseCaseImpl implements DirectBorrowUseCase {
     private static final DateTimeFormatter DUE_DATE_FMT = DateTimeFormatter.ofPattern("dd/MM/yyyy");
 
     private static final String FIND_USER_SQL = """
-        SELECT id FROM users
+        SELECT id, student_id, full_name FROM users
         WHERE student_id = :studentId AND status = 'ACTIVE'
         """;
 
@@ -57,6 +58,7 @@ public class DirectBorrowUseCaseImpl implements DirectBorrowUseCase {
     private final KafkaTemplate<String, Object> kafkaTemplate;
     private final com.library.shared.port.UserInteractionPort userInteractionPort;
     private final CirculationPolicyService policyService;
+    private final LibrarianNotificationService librarianNotificationService;
 
     @Override
     @Transactional
@@ -68,6 +70,8 @@ public class DirectBorrowUseCaseImpl implements DirectBorrowUseCase {
             FIND_USER_SQL, Map.of("studentId", command.studentId()));
         if (users.isEmpty()) throw new AppException(ErrorCode.USER_NOT_FOUND);
         Long userId = ((Number) users.get(0).get("id")).longValue();
+        String studentCode = (String) users.get(0).get("student_id");
+        String studentName = (String) users.get(0).get("full_name");
 
         // 2. Lock item by barcode
         com.library.shared.port.ItemSnapshot item = itemStatusPort.lockAndGetByBarcode(command.barcode());
@@ -140,6 +144,14 @@ public class DirectBorrowUseCaseImpl implements DirectBorrowUseCase {
         ));
 
         userInteractionPort.record(userId, item.publicationId(), com.library.shared.port.UserInteractionPort.TYPE_BORROW);
+        librarianNotificationService.notifyAll(
+            "LIB_CIRC_PICKUP",
+            "Sinh viên đã nhận sách",
+            String.format("%s (%s) đã nhận '%s' - bản sao %s. Hạn trả: %s.",
+                studentName, studentCode, item.publicationTitle(), item.barcode(), dueDate.format(DUE_DATE_FMT)),
+            "/librarianpage/transactions?highlight=" + entity.getId(),
+            entity.getId()
+        );
         log.info("Direct borrow created: transactionId={}, userId={}, itemId={}, librarianId={}",
             entity.getId(), userId, item.id(), librarianId);
 

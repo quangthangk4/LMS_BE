@@ -17,6 +17,7 @@ import com.library.shared.kafka.KafkaTopics;
 import com.library.shared.kafka.event.LibraryEmailMessage;
 import com.library.shared.kafka.event.NotificationMessage;
 import com.library.circulation.infrastructure.service.ReservationAssignmentService;
+import com.library.shared.service.LibrarianNotificationService;
 import com.library.shared.util.TsIdGenerator;
 import com.library.user.domain.enums.ViolationType;
 import com.library.user.domain.valueobject.UserId;
@@ -56,6 +57,7 @@ public class ReturnBookUseCaseImpl implements ReturnBookUseCase {
     private final KafkaTemplate<String, Object> kafkaTemplate;
     private final ReservationAssignmentService reservationAssignmentService;
     private final CirculationPolicyService policyService;
+    private final LibrarianNotificationService librarianNotificationService;
 
     @Override
     @Transactional
@@ -123,6 +125,20 @@ public class ReturnBookUseCaseImpl implements ReturnBookUseCase {
                 "actionPath", String.format("/publicpage/book/%d?review=1", item.publicationId())
             )
         ));
+        Map<String, Object> student = jdbcTemplate.queryForMap(
+            "SELECT full_name, student_id FROM users WHERE id = :userId",
+            Map.of("userId", entity.getUserId())
+        );
+        String fineText = overdueFineAmount == null ? "không phát sinh phí trễ hạn" : "phí trễ hạn " + overdueFineAmount + "đ";
+        librarianNotificationService.notifyAll(
+            "LIB_CIRC_RETURN",
+            "Sinh viên đã trả sách",
+            String.format("%s (%s) đã trả '%s' - bản sao %s. Tình trạng giao dịch: đã trả, %s.",
+                student.get("full_name"), student.get("student_id"), item.publicationTitle(), item.barcode(),
+                fineText),
+            "/librarianpage/transactions?highlight=" + transactionId,
+            transactionId
+        );
 
         log.info("Book returned: transactionId={}, itemId={}, overdue={}", transactionId, item.id(), overdue);
 
