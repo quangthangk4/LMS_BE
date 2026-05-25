@@ -113,7 +113,7 @@ class SignUpUseCaseTest {
         "Nguyen Van A",
         "2213188",
         "STUDENT",
-        "student@hcmut.edu.vn",
+        "student@gmail.com",
         "Password123",
         "Password123",
         FacultyEnum.KHOA_KHOA_HOC_VA_KY_THUAT_MAY_TINH

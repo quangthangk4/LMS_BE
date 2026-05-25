@@ -67,13 +67,13 @@ class AuthControllerTest {
     }
 
     @Test
-    @DisplayName("POST /auth/register accepts valid HCMUT registration payload")
+    @DisplayName("POST /auth/register accepts valid Gmail registration payload")
     void register_shouldCallSignUpUseCase_whenPayloadIsValid() throws Exception {
         RegisterUserCommand request = new RegisterUserCommand(
             "Nguyen Van A",
             "2212345",
             "STUDENT",
-            "student@hcmut.edu.vn",
+            "student@gmail.com",
             "pass1234",
             "pass1234",
             FacultyEnum.KHOA_KHOA_HOC_VA_KY_THUAT_MAY_TINH
@@ -90,19 +90,19 @@ class AuthControllerTest {
             ArgumentCaptor.forClass(RegisterUserCommand.class);
         verify(signUpUseCase).execute(captor.capture());
         org.assertj.core.api.Assertions.assertThat(captor.getValue().email())
-            .isEqualTo("student@hcmut.edu.vn");
+            .isEqualTo("student@gmail.com");
         org.assertj.core.api.Assertions.assertThat(captor.getValue().studentId())
             .isEqualTo("2212345");
     }
 
     @Test
-    @DisplayName("POST /auth/register rejects non-HCMUT email before use case")
+    @DisplayName("POST /auth/register rejects unsupported email domain before use case")
     void register_shouldReturnBadRequest_whenEmailIsInvalid() throws Exception {
         RegisterUserCommand request = new RegisterUserCommand(
             "Nguyen Van A",
             "2212345",
             "STUDENT",
-            "student@gmail.com",
+            "student@example.com",
             "pass1234",
             "pass1234",
             FacultyEnum.KHOA_KHOA_HOC_VA_KY_THUAT_MAY_TINH
@@ -123,7 +123,7 @@ class AuthControllerTest {
             "Nguyen Van A",
             "22ABC45",
             "STUDENT",
-            "student@hcmut.edu.vn",
+            "student@gmail.com",
             "pass1234",
             "pass1234",
             FacultyEnum.KHOA_KHOA_HOC_VA_KY_THUAT_MAY_TINH

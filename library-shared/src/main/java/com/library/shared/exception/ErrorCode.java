@@ -17,7 +17,7 @@ public enum ErrorCode {
   USERNAME_ALREADY_EXISTS(1102, "Username already exists", "Tên đăng nhập đã tồn tại", HttpStatus.CONFLICT),
   EMAIL_ALREADY_EXISTS(1103, "Email already exists", "Email đã được sử dụng", HttpStatus.CONFLICT),
   INVALID_USERNAME(1104, "Invalid username format", "Định dạng tên đăng nhập không hợp lệ", HttpStatus.BAD_REQUEST),
-  INVALID_EMAIL(1105, "Invalid email format, expect to: @hcmut.edu.vn", "Email phải có định dạng @hcmut.edu.vn", HttpStatus.BAD_REQUEST),
+  INVALID_EMAIL(1105, "Invalid email format, expect a gmail.com or hcmut.edu.vn address", "Email phải có định dạng @gmail.com hoặc @hcmut.edu.vn", HttpStatus.BAD_REQUEST),
   INVALID_PASSWORD(1106, "Invalid password", "Mật khẩu không hợp lệ", HttpStatus.BAD_REQUEST),
   USER_NOT_ACTIVE(1107, "User account is not active", "Tài khoản chưa được kích hoạt", HttpStatus.FORBIDDEN),
   USER_SUSPENDED(1108, "User account is suspended", "Tài khoản đã bị tạm khóa", HttpStatus.FORBIDDEN),

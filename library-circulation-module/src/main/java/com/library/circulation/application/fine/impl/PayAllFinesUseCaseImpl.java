@@ -4,6 +4,7 @@ import com.library.circulation.application.fine.PayAllFinesUseCase;
 import com.library.shared.constant.RoleConstants;
 import com.library.shared.kafka.KafkaTopics;
 import com.library.shared.kafka.event.NotificationMessage;
+import com.library.shared.service.LibrarianNotificationService;
 import java.util.List;
 import java.util.Map;
 import lombok.RequiredArgsConstructor;
@@ -44,6 +45,7 @@ public class PayAllFinesUseCaseImpl implements PayAllFinesUseCase {
     private final NamedParameterJdbcTemplate jdbcTemplate;
     private final KafkaTemplate<String, Object> kafkaTemplate;
     private final com.library.shared.service.AuditLogService auditLogService;
+    private final LibrarianNotificationService librarianNotificationService;
 
     @Override
     @Transactional
@@ -77,6 +79,14 @@ public class PayAllFinesUseCaseImpl implements PayAllFinesUseCase {
             studentId.trim(),
             "Librarian marked all unpaid fines as paid",
             Map.of("studentId", studentId.trim(), "paidCount", updated)
+        );
+        librarianNotificationService.notifyAll(
+            "LIB_FINE_PAID",
+            "Đã thu tất cả phí phạt",
+            String.format("Sinh viên %s đã thanh toán %d khoản phí phạt. Phương thức: tiền mặt/thủ thư ghi nhận.",
+                studentId.trim(), updated),
+            "/librarianpage/transactions",
+            null
         );
 
         return updated;

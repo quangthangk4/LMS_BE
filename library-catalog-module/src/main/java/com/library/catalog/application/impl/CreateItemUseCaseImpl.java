@@ -3,10 +3,12 @@ package com.library.catalog.application.impl;
 import com.library.catalog.application.CreateItemUseCase;
 import com.library.catalog.domain.entities.ItemStatus;
 import com.library.catalog.infrastructure.persistence.entity.ItemEntity;
+import com.library.catalog.infrastructure.persistence.entity.PublicationEntity;
 import com.library.catalog.infrastructure.persistence.repository.ItemJpaRepository;
 import com.library.catalog.infrastructure.persistence.repository.PublicationJpaRepository;
 import com.library.shared.exception.AppException;
 import com.library.shared.exception.ErrorCode;
+import com.library.shared.service.LibrarianNotificationService;
 import com.library.shared.util.TsIdGenerator;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
@@ -18,6 +20,7 @@ public class CreateItemUseCaseImpl implements CreateItemUseCase {
 
     private final ItemJpaRepository itemJpaRepository;
     private final PublicationJpaRepository publicationJpaRepository;
+    private final LibrarianNotificationService librarianNotificationService;
 
     @Override
     @Transactional
@@ -47,5 +50,16 @@ public class CreateItemUseCaseImpl implements CreateItemUseCase {
         entity.setStatus(ItemStatus.AVAILABLE);
 
         itemJpaRepository.save(entity);
+        String publicationTitle = publicationJpaRepository.findById(request.getPublicationId())
+            .map(PublicationEntity::getTitle)
+            .orElse("Unknown publication");
+        librarianNotificationService.notifyAll(
+            "LIB_COPY_CREATED",
+            "Đã thêm bản sao",
+            String.format("Bản sao %s của '%s' đã được thêm tại %s - %s.",
+                entity.getBarcode(), publicationTitle, entity.getBranch(), entity.getLocation()),
+            "/librarianpage/copies/" + entity.getId(),
+            entity.getId()
+        );
     }
 }

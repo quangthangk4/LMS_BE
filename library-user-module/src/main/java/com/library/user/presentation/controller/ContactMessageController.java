@@ -5,6 +5,7 @@ import com.library.shared.dto.ApiResponseApp;
 import com.library.shared.kafka.KafkaTopics;
 import com.library.shared.kafka.event.NotificationMessage;
 import com.library.shared.service.EmailService;
+import com.library.shared.service.LibrarianNotificationService;
 import com.library.shared.templates.EmailTemplates;
 import com.library.shared.util.RequiresAnyRole;
 import com.library.shared.util.RequiresAuthentication;
@@ -51,6 +52,7 @@ public class ContactMessageController {
   private final SecurityEvaluator security;
   private final KafkaTemplate<String, Object> kafkaTemplate;
   private final EmailService emailService;
+  private final LibrarianNotificationService librarianNotificationService;
 
   @Value("${base.frontend-url:http://localhost:3000}")
   private String frontendUrl;
@@ -181,6 +183,13 @@ public class ContactMessageController {
         mapper()
     );
     insertComment(response.id(), sender.id(), sender.fullName(), sender.email(), "USER", response.message());
+    librarianNotificationService.notifyAll(
+        "LIB_TICKET_NEW",
+        "Ticket hỗ trợ mới",
+        "Ticket " + response.ticketCode() + " từ " + response.senderName() + ": " + response.subject(),
+        "/librarianpage/contact-inbox?ticket=" + response.id(),
+        response.id()
+    );
     return ApiResponseApp.success("Contact message submitted", response);
   }
 
@@ -321,10 +330,24 @@ public class ContactMessageController {
     }
     if ("RESOLVED".equals(requestedStatus) && !"RESOLVED".equals(ticket.status())) {
       notifyTicketSender(response, "CONTACT_TICKET_RESOLVED");
+      librarianNotificationService.notifyAll(
+          "LIB_TICKET_RESOLVED",
+          "Ticket đã được xử lý",
+          "Ticket " + response.ticketCode() + " đã được xử lý bởi " + response.assignedToName() + ".",
+          "/librarianpage/contact-inbox?ticket=" + response.id(),
+          response.id()
+      );
       sendResolvedSupportEmail(response);
     }
     if ("CLOSED".equals(requestedStatus) && !"CLOSED".equals(ticket.status())) {
       notifyTicketSender(response, "CONTACT_TICKET_CLOSED");
+      librarianNotificationService.notifyAll(
+          "LIB_TICKET_CLOSED",
+          "Ticket đã được đóng",
+          "Ticket " + response.ticketCode() + " đã được đóng bởi " + response.assignedToName() + ".",
+          "/librarianpage/contact-inbox?ticket=" + response.id(),
+          response.id()
+      );
     }
     return ApiResponseApp.success("Contact message updated", response);
   }
@@ -367,6 +390,13 @@ public class ContactMessageController {
             .addValue("id", id)
             .addValue("userId", currentUserId),
         mapper()
+    );
+    librarianNotificationService.notifyAll(
+        "LIB_TICKET_ASSIGNED",
+        "Ticket đã có thủ thư nhận xử lý",
+        "Ticket " + response.ticketCode() + " đã được nhận xử lý bởi " + response.assignedToName() + ".",
+        "/librarianpage/contact-inbox?ticket=" + response.id(),
+        response.id()
     );
     return ApiResponseApp.success("Ticket assigned", response);
   }
@@ -448,6 +478,16 @@ public class ContactMessageController {
           """,
           new MapSqlParameterSource().addValue("id", id)
       );
+      if (ticket.assignedToUserId() != null) {
+        librarianNotificationService.notifyOne(
+            ticket.assignedToUserId(),
+            "LIB_TICKET_MESSAGE",
+            "Sinh viên nhắn tin trong ticket",
+            "Ticket " + ticket.ticketCode() + " có tin nhắn mới từ " + currentUser.fullName() + ".",
+            "/librarianpage/contact-inbox?ticket=" + ticket.id(),
+            ticket.id()
+        );
+      }
     }
 
     return ApiResponseApp.success("Comment added", comment);
@@ -588,6 +628,16 @@ public class ContactMessageController {
     );
     CurrentUser currentUser = currentUser();
     insertComment(id, currentUser.id(), currentUser.fullName(), currentUser.email(), "USER", "Yêu cầu mở lại ticket.");
+    if (response.assignedToUserId() != null) {
+      librarianNotificationService.notifyOne(
+          response.assignedToUserId(),
+          "LIB_TICKET_MESSAGE",
+          "Sinh viên mở lại ticket",
+          "Ticket " + response.ticketCode() + " được mở lại bởi " + response.senderName() + ".",
+          "/librarianpage/contact-inbox?ticket=" + response.id(),
+          response.id()
+      );
+    }
     return ApiResponseApp.success("Ticket reopened", response);
   }
 
@@ -626,6 +676,17 @@ public class ContactMessageController {
             .addValue("note", request.note()),
         mapper()
     );
+    if (response.assignedToUserId() != null) {
+      librarianNotificationService.notifyOne(
+          response.assignedToUserId(),
+          "LIB_TICKET_FEEDBACK",
+          "Sinh viên đã đánh giá hỗ trợ",
+          "Ticket " + response.ticketCode() + " được đánh giá " + request.rating() + "/5"
+              + (request.note() == null || request.note().isBlank() ? "." : ": " + request.note().trim()),
+          "/librarianpage/contact-inbox?ticket=" + response.id(),
+          response.id()
+      );
+    }
     return ApiResponseApp.success("Feedback saved", response);
   }
 

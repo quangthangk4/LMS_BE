@@ -5,6 +5,7 @@ import com.library.catalog.domain.valueobject.ISBN;
 import com.library.catalog.dto.request.publication.UpdatePublicationRequest;
 import com.library.catalog.infrastructure.persistence.entity.PublicationEntity;
 import com.library.catalog.infrastructure.persistence.repository.PublicationJpaRepository;
+import com.library.shared.service.LibrarianNotificationService;
 import com.library.shared.util.TsIdGenerator;
 import lombok.RequiredArgsConstructor;
 import org.springframework.jdbc.core.JdbcTemplate;
@@ -17,6 +18,7 @@ public class UpdatePublicationUseCaseImpl implements UpdatePublicationUseCase {
 
     private final PublicationJpaRepository publicationJpaRepository;
     private final JdbcTemplate jdbcTemplate;
+    private final LibrarianNotificationService librarianNotificationService;
 
     @Override
     @Transactional
@@ -47,6 +49,13 @@ public class UpdatePublicationUseCaseImpl implements UpdatePublicationUseCase {
         updateAuthors(publicationId, request.authorIds());
         updateCategories(publicationId, request.categoryIds());
         updateTags(publicationId, request.tagIds());
+        librarianNotificationService.notifyAll(
+            "LIB_BOOK_UPDATED",
+            "Đã cập nhật đầu sách",
+            String.format("Đầu sách '%s' đã được cập nhật.", entity.getTitle()),
+            "/librarianpage/books/" + publicationId,
+            publicationId
+        );
     }
 
     private void updateAuthors(Long publicationId, Long[] authorIds) {
