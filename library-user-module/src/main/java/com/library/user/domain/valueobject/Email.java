@@ -11,7 +11,7 @@ import lombok.Value;
 public class Email {
 
   private static final Pattern EMAIL_PATTERN =
-      Pattern.compile("^[A-Za-z0-9+_.-]+@hcmut.edu.vn$");
+      Pattern.compile("^[A-Za-z0-9._%+-]+@(gmail\\.com|hcmut\\.edu\\.vn)$", Pattern.CASE_INSENSITIVE);
 
   String value;
 
@@ -21,7 +21,7 @@ public class Email {
     }
     if (!EMAIL_PATTERN.matcher(value).matches()) {
       throw new DomainException(
-          "Invalid email format: " + value + ", expected domain: hcmut.edu.vn");
+          "Invalid email format: " + value + ", expected domain: gmail.com or hcmut.edu.vn");
     }
     this.value = value.toLowerCase();
   }

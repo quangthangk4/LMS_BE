@@ -166,7 +166,7 @@ public class AuthServiceImpl implements AuthService {
       throw new AppException(ErrorCode.VERIFY_EMAIL_FAILED);
     }
 
-    if (!email.endsWith("@hcmut.edu.vn")) {
+    if (!isAllowedLoginEmail(email)) {
       throw new AppException(ErrorCode.INVALID_EMAIL);
     }
 
@@ -264,6 +264,14 @@ public class AuthServiceImpl implements AuthService {
     Object oauthVerified = userInfo.get("verified_email");
     return Boolean.parseBoolean(String.valueOf(openIdVerified))
         || Boolean.parseBoolean(String.valueOf(oauthVerified));
+  }
+
+  private boolean isAllowedLoginEmail(String email) {
+    if (email == null) {
+      return false;
+    }
+    String normalized = email.toLowerCase();
+    return normalized.endsWith("@gmail.com") || normalized.endsWith("@hcmut.edu.vn");
   }
 
 

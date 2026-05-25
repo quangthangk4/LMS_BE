@@ -15,7 +15,7 @@ import lombok.Setter;
 @NoArgsConstructor
 public class LoginRequest {
     @NotBlank(message = "Email is required")
-    @Pattern(regexp = "^[a-zA-Z0-9._%+-]+@hcmut\\.edu\\.vn$", message = "Invalid email format")
+    @Pattern(regexp = "(?i)^[a-z0-9._%+-]+@(gmail\\.com|hcmut\\.edu\\.vn)$", message = "Invalid email format")
     private String email;
 
     @NotBlank(message = "Password is required")
