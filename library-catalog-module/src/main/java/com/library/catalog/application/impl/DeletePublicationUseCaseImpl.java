@@ -1,6 +1,7 @@
 package com.library.catalog.application.impl;
 
 import com.library.catalog.application.DeletePublicationUseCase;
+import com.library.catalog.application.cache.CatalogCacheEviction.EvictCatalogReadCaches;
 import com.library.catalog.infrastructure.persistence.repository.PublicationJpaRepository;
 import com.library.shared.exception.AppException;
 import com.library.shared.exception.ErrorCode;
@@ -19,6 +20,7 @@ public class DeletePublicationUseCaseImpl implements DeletePublicationUseCase {
     private final LibrarianNotificationService librarianNotificationService;
 
     @Override
+    @EvictCatalogReadCaches
     @Transactional
     public void execute(Long publicationId) {
         if (!publicationJpaRepository.existsById(publicationId)) {

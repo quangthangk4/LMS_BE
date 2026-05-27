@@ -1,6 +1,7 @@
 package com.library.catalog.application.impl;
 
 import com.library.catalog.application.CreateItemUseCase;
+import com.library.catalog.application.cache.CatalogCacheEviction.EvictCatalogReadCaches;
 import com.library.catalog.domain.entities.ItemStatus;
 import com.library.catalog.domain.enums.BindingType;
 import com.library.catalog.domain.enums.CopyType;
@@ -25,6 +26,7 @@ public class CreateItemUseCaseImpl implements CreateItemUseCase {
     private final LibrarianNotificationService librarianNotificationService;
 
     @Override
+    @EvictCatalogReadCaches
     @Transactional
     public void execute(com.library.catalog.dto.request.item.CreateItemRequest request) {
         if (request.getPublicationId() == null) {

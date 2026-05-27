@@ -1,12 +1,14 @@
 package com.library.catalog.application.impl;
 
 import com.library.catalog.application.GetPublicationByIdByUseCase;
+import com.library.catalog.application.cache.CatalogCacheNames;
 import com.library.catalog.application.i18n.MetadataLanguage;
 import com.library.catalog.dto.response.publication.PublicationDetailResponse;
 import com.library.catalog.infrastructure.persistence.repository.PublicationRepositoryCustom;
 import com.library.shared.exception.AppException;
 import com.library.shared.exception.ErrorCode;
 import lombok.RequiredArgsConstructor;
+import org.springframework.cache.annotation.Cacheable;
 import org.springframework.stereotype.Service;
 
 @Service
@@ -17,6 +19,10 @@ public class GetPublicationByIdByUseCaseImpl implements
   private final PublicationRepositoryCustom publicationRepository;
 
   @Override
+  @Cacheable(
+      cacheNames = CatalogCacheNames.PUBLICATION_DETAIL,
+      key = "T(com.library.catalog.application.cache.CatalogCacheKeys).detail(#publicationId, #uiLanguage)"
+  )
   public PublicationDetailResponse execute(Long publicationId, String uiLanguage) {
     return publicationRepository
         .findPublicationDetailForLibrarian(publicationId, MetadataLanguage.normalize(uiLanguage))

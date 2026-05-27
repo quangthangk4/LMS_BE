@@ -12,6 +12,7 @@ import com.library.circulation.application.deposit.BorrowDepositService;
 import com.library.circulation.application.policy.CirculationPolicy;
 import com.library.circulation.application.policy.CirculationPolicyService;
 import com.library.circulation.application.transaction.impl.ReturnBookUseCaseImpl;
+import com.library.circulation.application.credit.ReaderCreditScoreService;
 import com.library.circulation.domain.enums.TransactionStatus;
 import com.library.circulation.dto.request.ReturnCommand;
 import com.library.circulation.dto.response.ReturnResponse;
@@ -20,6 +21,7 @@ import com.library.circulation.infrastructure.persistence.entity.FineEntity;
 import com.library.circulation.infrastructure.persistence.repository.BorrowingTransactionJpaRepository;
 import com.library.circulation.infrastructure.persistence.repository.FineJpaRepository;
 import com.library.circulation.infrastructure.service.ReservationAssignmentService;
+import com.library.circulation.infrastructure.service.WishlistAvailabilityNotificationService;
 import com.library.shared.exception.AppException;
 import com.library.shared.exception.ErrorCode;
 import com.library.shared.service.LibrarianNotificationService;
@@ -54,6 +56,8 @@ class ReturnBookUseCaseTest {
     @Mock private CirculationPolicyService policyService;
     @Mock private BorrowDepositService borrowDepositService;
     @Mock private LibrarianNotificationService librarianNotificationService;
+    @Mock private ReaderCreditScoreService readerCreditScoreService;
+    @Mock private WishlistAvailabilityNotificationService wishlistAvailabilityNotificationService;
 
     @InjectMocks private ReturnBookUseCaseImpl useCase;
 
@@ -99,6 +103,7 @@ class ReturnBookUseCaseTest {
         when(transactionJpaRepository.save(any())).thenAnswer(inv -> inv.getArgument(0));
         when(borrowDepositService.settleOnReturn(TRANSACTION_ID, LIBRARIAN_ID))
             .thenReturn(noDepositSettlement());
+        when(wishlistAvailabilityNotificationService.isOutOfStock(PUBLICATION_ID)).thenReturn(false);
 
         // When
         ReturnResponse result = useCase.execute(LIBRARIAN_ID, new ReturnCommand(BARCODE));
@@ -125,6 +130,7 @@ class ReturnBookUseCaseTest {
         when(fineJpaRepository.save(any())).thenAnswer(inv -> inv.getArgument(0));
         when(borrowDepositService.settleOnReturn(TRANSACTION_ID, LIBRARIAN_ID))
             .thenReturn(noDepositSettlement());
+        when(wishlistAvailabilityNotificationService.isOutOfStock(PUBLICATION_ID)).thenReturn(false);
         when(policyService.getPolicy()).thenReturn(new CirculationPolicy(
             48,
             14,

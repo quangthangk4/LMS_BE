@@ -14,6 +14,7 @@ import com.library.recommendation.infrastructure.persistence.entity.RatingEntity
 import com.library.recommendation.infrastructure.persistence.repository.RatingJpaRepository;
 import com.library.shared.exception.AppException;
 import com.library.shared.exception.ErrorCode;
+import com.library.shared.service.LibrarianNotificationService;
 import java.sql.Timestamp;
 import java.time.Instant;
 import java.util.List;
@@ -34,6 +35,7 @@ class CreatePublicationRatingUseCaseTest {
 
   @Mock private RatingJpaRepository ratingJpaRepository;
   @Mock private JdbcTemplate jdbcTemplate;
+  @Mock private LibrarianNotificationService librarianNotificationService;
 
   @InjectMocks private CreatePublicationRatingUseCaseImpl useCase;
 
@@ -48,6 +50,11 @@ class CreatePublicationRatingUseCaseTest {
         .comment("Very useful book")
         .build();
     mockEligibleTransaction(false, Instant.now());
+    when(jdbcTemplate.queryForMap(anyString(), any(Object[].class))).thenReturn(Map.of(
+        "full_name", "Nguyen Van A",
+        "student_id", "2213001",
+        "title", "Clean Code"
+    ));
 
     useCase.execute(PUBLICATION_ID, USER_ID, request);
 

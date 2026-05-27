@@ -11,10 +11,13 @@ import com.library.catalog.domain.entities.ItemStatus;
 import com.library.catalog.domain.enums.ConditionItemEnum;
 import com.library.catalog.dto.request.item.CreateItemRequest;
 import com.library.catalog.infrastructure.persistence.entity.ItemEntity;
+import com.library.catalog.infrastructure.persistence.entity.PublicationEntity;
 import com.library.catalog.infrastructure.persistence.repository.ItemJpaRepository;
 import com.library.catalog.infrastructure.persistence.repository.PublicationJpaRepository;
 import com.library.shared.exception.AppException;
 import com.library.shared.exception.ErrorCode;
+import com.library.shared.service.LibrarianNotificationService;
+import java.util.Optional;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -29,6 +32,7 @@ class CreateItemUseCaseImplTest {
 
     @Mock private ItemJpaRepository itemJpaRepository;
     @Mock private PublicationJpaRepository publicationJpaRepository;
+    @Mock private LibrarianNotificationService librarianNotificationService;
 
     @InjectMocks private CreateItemUseCaseImpl useCase;
 
@@ -43,6 +47,9 @@ class CreateItemUseCaseImplTest {
             .condition(ConditionItemEnum.NEW)
             .build();
         when(publicationJpaRepository.existsById(100L)).thenReturn(true);
+        PublicationEntity publication = new PublicationEntity();
+        publication.setTitle("Clean Code");
+        when(publicationJpaRepository.findById(100L)).thenReturn(Optional.of(publication));
         when(itemJpaRepository.existsByBarcode("BC-001")).thenReturn(false);
 
         useCase.execute(request);

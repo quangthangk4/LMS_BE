@@ -3,6 +3,8 @@ package com.library.recommendation.application;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.ArgumentMatchers.anyMap;
 import static org.mockito.ArgumentMatchers.anyString;
+import static org.mockito.ArgumentMatchers.eq;
+import static org.mockito.ArgumentMatchers.isNull;
 import static org.mockito.Mockito.when;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
@@ -31,7 +33,7 @@ class GetRecommendationsUseCaseTest {
   void usesAiGatewayRanking_whenGatewayReturnsIds() {
     GetRecommendationsUseCaseImpl useCase =
         new GetRecommendationsUseCaseImpl(jdbcTemplate, new ObjectMapper(), aiGatewayService);
-    when(aiGatewayService.getRecommendations(1001L, 3))
+    when(aiGatewayService.getRecommendations(eq(1001L), isNull(), eq(3)))
         .thenReturn(new AiGatewayService.AiRecommendationResult(List.of(3L, 1L, 2L), "ALS"));
     when(jdbcTemplate.queryForList(anyString(), anyMap()))
         .thenReturn(List.of(row(1L, "Book 1"), row(2L, "Book 2"), row(3L, "Book 3")));
@@ -47,7 +49,7 @@ class GetRecommendationsUseCaseTest {
   void usesCachedRecommendations_whenGatewayEmpty() {
     GetRecommendationsUseCaseImpl useCase =
         new GetRecommendationsUseCaseImpl(jdbcTemplate, new ObjectMapper(), aiGatewayService);
-    when(aiGatewayService.getRecommendations(1001L, 2))
+    when(aiGatewayService.getRecommendations(eq(1001L), isNull(), eq(2)))
         .thenReturn(new AiGatewayService.AiRecommendationResult(List.of(), "AI_GATEWAY_UNAVAILABLE"));
     when(jdbcTemplate.queryForList(anyString(), anyMap()))
         .thenReturn(List.of(Map.of("pub_ids", "[2,1]", "strategy", "ALS_CACHE")))
@@ -64,7 +66,7 @@ class GetRecommendationsUseCaseTest {
   void usesTrendingFallback_whenGatewayAndCacheEmpty() {
     GetRecommendationsUseCaseImpl useCase =
         new GetRecommendationsUseCaseImpl(jdbcTemplate, new ObjectMapper(), aiGatewayService);
-    when(aiGatewayService.getRecommendations(1001L, 2))
+    when(aiGatewayService.getRecommendations(eq(1001L), isNull(), eq(2)))
         .thenReturn(new AiGatewayService.AiRecommendationResult(List.of(), "TRENDING_FALLBACK"));
     when(jdbcTemplate.queryForList(anyString(), anyMap()))
         .thenReturn(List.of())

@@ -11,6 +11,7 @@ import com.library.catalog.domain.enums.PublicationFormat;
 import com.library.catalog.dto.request.publication.CreatePublicationRequest;
 import com.library.catalog.infrastructure.persistence.entity.PublicationEntity;
 import com.library.catalog.infrastructure.persistence.repository.PublicationJpaRepository;
+import com.library.shared.service.LibrarianNotificationService;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -26,6 +27,7 @@ class CreatePublicationUseCaseImplTest {
 
     @Mock private PublicationJpaRepository publicationJpaRepository;
     @Mock private JdbcTemplate jdbcTemplate;
+    @Mock private LibrarianNotificationService librarianNotificationService;
 
     @InjectMocks private CreatePublicationUseCaseImpl useCase;
 

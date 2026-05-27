@@ -1,6 +1,7 @@
 package com.library.catalog.application.impl;
 
 import com.library.catalog.application.SearchPublicationsUseCase;
+import com.library.catalog.application.cache.CatalogCacheNames;
 import com.library.catalog.application.i18n.MetadataLanguage;
 import com.library.catalog.dto.request.publication.PublicSearchRequest;
 import com.library.catalog.dto.response.publication.PublicSearchResult;
@@ -9,15 +10,19 @@ import java.text.Normalizer;
 import java.util.List;
 import java.util.Locale;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
+import org.springframework.cache.annotation.Cacheable;
 import org.springframework.jdbc.core.namedparam.MapSqlParameterSource;
 import org.springframework.jdbc.core.namedparam.NamedParameterJdbcTemplate;
 import org.springframework.stereotype.Service;
 
 @Service
 @RequiredArgsConstructor
+@Slf4j
 public class SearchPublicationsUseCaseImpl implements SearchPublicationsUseCase {
 
     private final NamedParameterJdbcTemplate jdbc;
+    private static final long SLOW_QUERY_THRESHOLD_MS = 1_000L;
 
     private static final String SELECT_CLAUSE = """
         SELECT
@@ -64,7 +69,12 @@ public class SearchPublicationsUseCaseImpl implements SearchPublicationsUseCase 
         """;
 
     @Override
+    @Cacheable(
+        cacheNames = CatalogCacheNames.PUBLICATION_SEARCH,
+        key = "T(com.library.catalog.application.cache.CatalogCacheKeys).publicSearch(#req, #uiLanguage)"
+    )
     public PageResponse<PublicSearchResult> execute(PublicSearchRequest req, String uiLanguage) {
+        long startedAt = System.nanoTime();
         MapSqlParameterSource params = new MapSqlParameterSource();
         params.addValue("uiLanguage", MetadataLanguage.normalize(uiLanguage));
         String where = buildWhere(req, params);
@@ -77,6 +87,7 @@ public class SearchPublicationsUseCaseImpl implements SearchPublicationsUseCase 
         String dataSql = SELECT_CLAUSE + where + " ORDER BY " + orderBy + " LIMIT :size OFFSET :offset";
         String countSql = COUNT_CLAUSE + where;
 
+        long dataStartedAt = System.nanoTime();
         List<PublicSearchResult> content = jdbc.query(dataSql, params, (rs, row) ->
             new PublicSearchResult(
                 rs.getLong("publication_id"),
@@ -95,9 +106,14 @@ public class SearchPublicationsUseCaseImpl implements SearchPublicationsUseCase 
                 rs.getLong("view_count")
             )
         );
+        long dataMs = elapsedMs(dataStartedAt);
 
+        long countStartedAt = System.nanoTime();
         long total = jdbc.queryForObject(countSql, params, Long.class);
+        long countMs = elapsedMs(countStartedAt);
         int totalPages = size > 0 ? (int) Math.ceil((double) total / size) : 0;
+
+        profileSearch(req, page, size, content.size(), total, dataMs, countMs, elapsedMs(startedAt));
 
         return PageResponse.<PublicSearchResult>builder()
             .content(content)
@@ -285,5 +301,50 @@ public class SearchPublicationsUseCaseImpl implements SearchPublicationsUseCase 
             .replace('Đ', 'D')
             .toLowerCase(Locale.ROOT);
         return normalized.trim();
+    }
+
+    private void profileSearch(
+        PublicSearchRequest req,
+        int page,
+        int size,
+        int rows,
+        long total,
+        long dataMs,
+        long countMs,
+        long totalMs
+    ) {
+        if (totalMs >= SLOW_QUERY_THRESHOLD_MS) {
+            log.warn(
+                "SQL_PROFILE public_search slow totalMs={} dataMs={} countMs={} rows={} total={} page={} size={} keyword='{}' sortBy='{}' categoryId={} categoryIds={} available={} branch='{}'",
+                totalMs,
+                dataMs,
+                countMs,
+                rows,
+                total,
+                page,
+                size,
+                req.getKeyword(),
+                req.getSortBy(),
+                req.getCategoryId(),
+                req.getCategoryIds(),
+                req.getAvailable(),
+                req.getBranch()
+            );
+        } else {
+            log.debug(
+                "SQL_PROFILE public_search totalMs={} dataMs={} countMs={} rows={} total={} page={} size={}",
+                totalMs,
+                dataMs,
+                countMs,
+                rows,
+                total,
+                page,
+                size
+            );
+        }
+    }
+
+    private static long elapsedMs(long startedAt) {
+        return (System.nanoTime() - startedAt) / 1_000_000L;
     }
 }

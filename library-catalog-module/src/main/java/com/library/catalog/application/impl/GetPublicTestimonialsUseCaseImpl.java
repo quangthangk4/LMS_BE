@@ -1,10 +1,12 @@
 package com.library.catalog.application.impl;
 
 import com.library.catalog.application.GetPublicTestimonialsUseCase;
+import com.library.catalog.application.cache.CatalogCacheNames;
 import com.library.catalog.dto.response.publication.PublicTestimonialResponse;
 import java.util.List;
 import java.util.Map;
 import lombok.RequiredArgsConstructor;
+import org.springframework.cache.annotation.Cacheable;
 import org.springframework.jdbc.core.namedparam.MapSqlParameterSource;
 import org.springframework.jdbc.core.namedparam.NamedParameterJdbcTemplate;
 import org.springframework.stereotype.Service;
@@ -33,6 +35,7 @@ public class GetPublicTestimonialsUseCaseImpl implements GetPublicTestimonialsUs
       """;
 
   @Override
+  @Cacheable(cacheNames = CatalogCacheNames.PUBLIC_TESTIMONIALS, key = "#limit")
   @Transactional(readOnly = true)
   public List<PublicTestimonialResponse> execute(int limit) {
     int safeLimit = Math.max(1, Math.min(limit, 12));

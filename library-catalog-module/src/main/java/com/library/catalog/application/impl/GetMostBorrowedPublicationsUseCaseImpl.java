@@ -1,6 +1,7 @@
 package com.library.catalog.application.impl;
 
 import com.library.catalog.application.GetMostBorrowedPublicationsUseCase;
+import com.library.catalog.application.cache.CatalogCacheNames;
 import com.library.catalog.application.i18n.MetadataLanguage;
 import com.library.catalog.dto.projection.AuthorNameProjection;
 import com.library.catalog.dto.projection.MostBorrowedPublicationProjection;
@@ -10,6 +11,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.stream.Collectors;
 import lombok.RequiredArgsConstructor;
+import org.springframework.cache.annotation.Cacheable;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
 import org.springframework.jdbc.core.namedparam.MapSqlParameterSource;
@@ -24,6 +26,10 @@ public class GetMostBorrowedPublicationsUseCaseImpl implements GetMostBorrowedPu
   private final NamedParameterJdbcTemplate jdbc;
 
   @Override
+  @Cacheable(
+      cacheNames = CatalogCacheNames.MOST_BORROWED_PUBLICATIONS,
+      key = "T(com.library.catalog.application.cache.CatalogCacheKeys).localizedLimit(#limit, #uiLanguage)"
+  )
   public List<MostBorrowedPublicationsResponse> execute(int limit, String uiLanguage) {
     Pageable pageable = PageRequest.of(0, limit);
     List<MostBorrowedPublicationProjection> projections = publicationJpaRepository.findMostBorrowedPublications(
