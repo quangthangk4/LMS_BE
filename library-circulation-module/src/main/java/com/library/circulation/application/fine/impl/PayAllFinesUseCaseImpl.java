@@ -1,5 +1,6 @@
 package com.library.circulation.application.fine.impl;
 
+import com.library.circulation.application.credit.ReaderCreditScoreService;
 import com.library.circulation.application.fine.PayAllFinesUseCase;
 import com.library.shared.constant.RoleConstants;
 import com.library.shared.kafka.KafkaTopics;
@@ -46,6 +47,7 @@ public class PayAllFinesUseCaseImpl implements PayAllFinesUseCase {
     private final KafkaTemplate<String, Object> kafkaTemplate;
     private final com.library.shared.service.AuditLogService auditLogService;
     private final LibrarianNotificationService librarianNotificationService;
+    private final ReaderCreditScoreService readerCreditScoreService;
 
     @Override
     @Transactional
@@ -62,6 +64,7 @@ public class PayAllFinesUseCaseImpl implements PayAllFinesUseCase {
             "studentId", studentId.trim(),
             "librarianId", librarianId
         ));
+        readerCreditScoreService.recordFinePayment(userId, updated);
         log.info("Paid all fines for studentId={}, count={}", studentId, updated);
 
         kafkaTemplate.send(KafkaTopics.NOTIFICATION_SEND, new NotificationMessage(

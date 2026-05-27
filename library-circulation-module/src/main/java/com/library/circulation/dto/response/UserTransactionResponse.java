@@ -27,5 +27,11 @@ public class UserTransactionResponse {
     private Instant returnedDate;
     private TransactionStatus status;
     private BigDecimal fineAmount;
+    private BigDecimal grossFineAmount;
+    private BigDecimal depositAmount;
+    private String depositStatus;
+    private BigDecimal depositAppliedAmount;
+    private BigDecimal depositRefundAmount;
+    private BigDecimal additionalAmountDue;
     private Boolean reviewed;
 }

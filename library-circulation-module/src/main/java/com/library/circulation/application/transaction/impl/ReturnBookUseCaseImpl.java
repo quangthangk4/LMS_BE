@@ -1,6 +1,8 @@
 package com.library.circulation.application.transaction.impl;
 
 import com.library.catalog.domain.valueobject.ItemId;
+import com.library.circulation.application.credit.ReaderCreditScoreService;
+import com.library.circulation.application.deposit.BorrowDepositService;
 import com.library.circulation.application.policy.CirculationPolicyService;
 import com.library.circulation.application.transaction.ReturnBookUseCase;
 import com.library.circulation.domain.entities.BorrowingTransaction;
@@ -17,6 +19,7 @@ import com.library.shared.kafka.KafkaTopics;
 import com.library.shared.kafka.event.LibraryEmailMessage;
 import com.library.shared.kafka.event.NotificationMessage;
 import com.library.circulation.infrastructure.service.ReservationAssignmentService;
+import com.library.circulation.infrastructure.service.WishlistAvailabilityNotificationService;
 import com.library.shared.service.LibrarianNotificationService;
 import com.library.shared.util.TsIdGenerator;
 import com.library.user.domain.enums.ViolationType;
@@ -58,6 +61,9 @@ public class ReturnBookUseCaseImpl implements ReturnBookUseCase {
     private final ReservationAssignmentService reservationAssignmentService;
     private final CirculationPolicyService policyService;
     private final LibrarianNotificationService librarianNotificationService;
+    private final BorrowDepositService borrowDepositService;
+    private final ReaderCreditScoreService readerCreditScoreService;
+    private final WishlistAvailabilityNotificationService wishlistAvailabilityNotificationService;
 
     @Override
     @Transactional
@@ -79,6 +85,7 @@ public class ReturnBookUseCaseImpl implements ReturnBookUseCase {
         // 4. Domain: processReturn (checks BORROWING | OVERDUE invariant)
         Instant now = Instant.now();
         transaction.processReturn(UserId.of(librarianId), now);
+        boolean wasPublicationOutOfStock = wishlistAvailabilityNotificationService.isOutOfStock(item.publicationId());
 
         // 5. Update item → AVAILABLE, persist transaction
         itemStatusPort.updateStatus(item.id(), "AVAILABLE");
@@ -89,8 +96,9 @@ public class ReturnBookUseCaseImpl implements ReturnBookUseCase {
         LocalDate today = LocalDate.now(ZONE);
         boolean overdue = transaction.isOverdue(today);
         BigDecimal overdueFineAmount = null;
+        long daysLate = 0;
         if (overdue) {
-            long daysLate = ChronoUnit.DAYS.between(transaction.getDueDate(), today);
+            daysLate = ChronoUnit.DAYS.between(transaction.getDueDate(), today);
             overdueFineAmount = policyService.getPolicy().overdueFinePerDay().multiply(BigDecimal.valueOf(daysLate));
             FineEntity fine = FineEntity.builder()
                 .transactionId(transactionId)
@@ -102,9 +110,21 @@ public class ReturnBookUseCaseImpl implements ReturnBookUseCase {
             log.info("Overdue fine created: transactionId={}, daysLate={}, amount={}",
                 transactionId, daysLate, overdueFineAmount);
         }
+        transactionJpaRepository.flush();
+        fineJpaRepository.flush();
+        BorrowDepositService.DepositSettlement depositSettlement =
+            borrowDepositService.settleOnReturn(transactionId, librarianId);
+        readerCreditScoreService.recordReturn(entity.getUserId(), daysLate);
 
         // 7. Check if any reservation is waiting for this book
-        reservationAssignmentService.tryAssign(item.id(), item.publicationId(), item.branch());
+        boolean assignedToReservation = reservationAssignmentService.tryAssign(item.id(), item.publicationId(), item.branch());
+        if (wasPublicationOutOfStock && !assignedToReservation) {
+            wishlistAvailabilityNotificationService.notifyWishlistWatchers(
+                item.publicationId(),
+                item.publicationTitle(),
+                entity.getUserId()
+            );
+        }
 
         // 8. Notify + email
         LocalDate returnedDate = today;
@@ -112,7 +132,11 @@ public class ReturnBookUseCaseImpl implements ReturnBookUseCase {
             entity.getUserId(),
             "RETURN_CONFIRMED",
             "Trả sách thành công - mời bạn đánh giá",
-            String.format("Bạn đã trả sách '%s' thành công. Hãy chia sẻ trải nghiệm để nhận 5 điểm đóng góp.", item.publicationTitle()),
+            String.format("Bạn đã trả sách '%s' thành công. Cọc: đã khấu trừ %sđ, hoàn %sđ, cần đóng thêm %sđ. Hãy chia sẻ trải nghiệm để nhận 5 điểm đóng góp.",
+                item.publicationTitle(),
+                depositSettlement.depositAppliedAmount(),
+                depositSettlement.depositRefundAmount(),
+                depositSettlement.additionalAmountDue()),
             String.format("/publicpage/book/%d?review=1", item.publicationId()),
             transactionId
         ));
@@ -122,6 +146,11 @@ public class ReturnBookUseCaseImpl implements ReturnBookUseCase {
             Map.of(
                 "publicationTitle", item.publicationTitle(),
                 "returnDate", returnedDate.toString(),
+                "depositAmount", formatVnd(depositSettlement.depositAmount()),
+                "grossFineAmount", formatVnd(depositSettlement.grossFineAmount()),
+                "depositAppliedAmount", formatVnd(depositSettlement.depositAppliedAmount()),
+                "depositRefundAmount", formatVnd(depositSettlement.depositRefundAmount()),
+                "additionalAmountDue", formatVnd(depositSettlement.additionalAmountDue()),
                 "actionPath", String.format("/publicpage/book/%d?review=1", item.publicationId())
             )
         ));
@@ -133,9 +162,13 @@ public class ReturnBookUseCaseImpl implements ReturnBookUseCase {
         librarianNotificationService.notifyAll(
             "LIB_CIRC_RETURN",
             "Sinh viên đã trả sách",
-            String.format("%s (%s) đã trả '%s' - bản sao %s. Tình trạng giao dịch: đã trả, %s.",
+            String.format("%s (%s) đã trả '%s' - bản sao %s. Tình trạng giao dịch: đã trả, %s. Cọc: thu %sđ, khấu trừ %sđ, hoàn %sđ, thu thêm %sđ.",
                 student.get("full_name"), student.get("student_id"), item.publicationTitle(), item.barcode(),
-                fineText),
+                fineText,
+                depositSettlement.depositAmount(),
+                depositSettlement.depositAppliedAmount(),
+                depositSettlement.depositRefundAmount(),
+                depositSettlement.additionalAmountDue()),
             "/librarianpage/transactions?highlight=" + transactionId,
             transactionId
         );
@@ -149,6 +182,12 @@ public class ReturnBookUseCaseImpl implements ReturnBookUseCase {
             .returnedDate(returnedDate)
             .overdue(overdue)
             .overdueFineAmount(overdueFineAmount)
+            .depositAmount(depositSettlement.depositAmount())
+            .depositStatus(depositSettlement.depositStatus())
+            .grossFineAmount(depositSettlement.grossFineAmount())
+            .depositAppliedAmount(depositSettlement.depositAppliedAmount())
+            .depositRefundAmount(depositSettlement.depositRefundAmount())
+            .additionalAmountDue(depositSettlement.additionalAmountDue())
             .build();
     }
 
@@ -173,5 +212,9 @@ public class ReturnBookUseCaseImpl implements ReturnBookUseCase {
         entity.setReturnedDate(domain.getReturnedDate());
         entity.setLibrarianIdReturn(
             domain.getLibrarianIdReturn() != null ? domain.getLibrarianIdReturn().getValue() : null);
+    }
+
+    private String formatVnd(BigDecimal amount) {
+        return (amount == null ? BigDecimal.ZERO : amount).toPlainString() + "đ";
     }
 }

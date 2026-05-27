@@ -1,6 +1,7 @@
 package com.library.circulation.application.transaction.impl;
 
 import com.library.catalog.domain.valueobject.ItemId;
+import com.library.circulation.application.deposit.BorrowDepositService;
 import com.library.circulation.application.policy.CirculationPolicyService;
 import com.library.circulation.application.transaction.ConfirmPickupUseCase;
 import com.library.circulation.domain.entities.BorrowingTransaction;
@@ -12,6 +13,7 @@ import com.library.circulation.infrastructure.persistence.repository.BorrowingTr
 import com.library.shared.exception.AppException;
 import com.library.shared.exception.ErrorCode;
 import com.library.shared.kafka.KafkaTopics;
+import com.library.shared.kafka.event.LibraryEmailMessage;
 import com.library.shared.kafka.event.NotificationMessage;
 import com.library.shared.service.LibrarianNotificationService;
 import com.library.user.domain.valueobject.UserId;
@@ -42,6 +44,7 @@ public class ConfirmPickupUseCaseImpl implements ConfirmPickupUseCase {
     private final CirculationPolicyService policyService;
     private final NamedParameterJdbcTemplate jdbcTemplate;
     private final LibrarianNotificationService librarianNotificationService;
+    private final BorrowDepositService borrowDepositService;
 
     @Override
     @Transactional
@@ -64,17 +67,31 @@ public class ConfirmPickupUseCaseImpl implements ConfirmPickupUseCase {
         itemStatusPort.updateStatus(entity.getItemId(), "BORROWED");
         applyToEntity(transaction, entity);
         transactionJpaRepository.save(entity);
+        transactionJpaRepository.flush();
+        BorrowDepositService.DepositSnapshot deposit = borrowDepositService.collectForBorrow(
+            entity.getId(), librarianId, policyService.getPolicy().defaultDepositAmount());
 
         // Publish in-app notification
         kafkaTemplate.send(KafkaTopics.NOTIFICATION_SEND, new NotificationMessage(
             entity.getUserId(),
             "PICKUP_CONFIRMED",
             "Sách đã được giao",
-            String.format("Bạn đã nhận '%s'. Hạn trả: %s.",
+            String.format("Bạn đã nhận '%s'. Hạn trả: %s. Tiền cọc đã thu: %sđ.",
                 item.publicationTitle(),
-                entity.getDueDate().format(DUE_DATE_FMT)),
+                entity.getDueDate().format(DUE_DATE_FMT),
+                deposit.depositAmount()),
             "/userpage/my-books?highlight=" + entity.getId(),
             entity.getId()
+        ));
+        kafkaTemplate.send(KafkaTopics.LIBRARY_EMAIL, new LibraryEmailMessage(
+            entity.getUserId(),
+            LibraryEmailMessage.PICKUP_CONFIRMED,
+            Map.of(
+                "publicationTitle", item.publicationTitle(),
+                "dueDate", entity.getDueDate().format(DUE_DATE_FMT),
+                "depositAmount", formatVnd(deposit.depositAmount()),
+                "actionPath", "/userpage/my-books?highlight=" + entity.getId()
+            )
         ));
 
         userInteractionPort.record(entity.getUserId(), item.publicationId(), com.library.shared.port.UserInteractionPort.TYPE_BORROW);
@@ -85,9 +102,9 @@ public class ConfirmPickupUseCaseImpl implements ConfirmPickupUseCase {
         librarianNotificationService.notifyAll(
             "LIB_CIRC_PICKUP",
             "Sinh viên đã nhận sách",
-            String.format("%s (%s) đã nhận '%s' - bản sao %s. Hạn trả: %s.",
+            String.format("%s (%s) đã nhận '%s' - bản sao %s. Hạn trả: %s. Đã thu cọc: %sđ.",
                 student.get("full_name"), student.get("student_id"), item.publicationTitle(), item.barcode(),
-                entity.getDueDate().format(DUE_DATE_FMT)),
+                entity.getDueDate().format(DUE_DATE_FMT), deposit.depositAmount()),
             "/librarianpage/transactions?highlight=" + entity.getId(),
             entity.getId()
         );
@@ -103,6 +120,8 @@ public class ConfirmPickupUseCaseImpl implements ConfirmPickupUseCase {
             .location(item.location())
             .dueDate(entity.getDueDate())
             .status(entity.getStatus())
+            .depositAmount(deposit.depositAmount())
+            .depositStatus(deposit.depositStatus())
             .build();
     }
 
@@ -128,5 +147,9 @@ public class ConfirmPickupUseCaseImpl implements ConfirmPickupUseCase {
         entity.setDueDate(domain.getDueDate());
         entity.setLibrarianIdIssue(
             domain.getLibrarianIdIssue() != null ? domain.getLibrarianIdIssue().getValue() : null);
+    }
+
+    private String formatVnd(java.math.BigDecimal amount) {
+        return (amount == null ? java.math.BigDecimal.ZERO : amount).toPlainString() + "đ";
     }
 }

@@ -89,7 +89,12 @@ public class GetRecommendationsUseCaseImpl implements GetRecommendationsUseCase 
 
     @Override
     public List<RecommendationResponse> execute(Long userId, int limit) {
-        List<Long> aiPubIds = fetchFromAiGateway(userId, limit);
+        return execute(userId, null, limit);
+    }
+
+    @Override
+    public List<RecommendationResponse> execute(Long userId, String faculty, int limit) {
+        List<Long> aiPubIds = fetchFromAiGateway(userId, faculty, limit);
         if (!aiPubIds.isEmpty()) {
             List<RecommendationResponse> fetched = fetchByIds(aiPubIds);
             if (!fetched.isEmpty()) {
@@ -120,16 +125,16 @@ public class GetRecommendationsUseCaseImpl implements GetRecommendationsUseCase 
         return preserveAiRanking(pubIds, fetched, limit);
     }
 
-    private List<Long> fetchFromAiGateway(Long userId, int limit) {
+    private List<Long> fetchFromAiGateway(Long userId, String faculty, int limit) {
         try {
             AiGatewayService.AiRecommendationResult result =
-                aiGatewayService.getRecommendations(userId, limit);
+                aiGatewayService.getRecommendations(userId, faculty, limit);
             if (result == null || result.publicationIds() == null) {
                 return Collections.emptyList();
             }
             return result.publicationIds().stream().limit(limit).toList();
         } catch (Exception e) {
-            log.warn("AI recommendation gateway failed for userId={}, falling back to cache/local", userId, e);
+            log.warn("AI recommendation gateway failed for userId={}, faculty={}, falling back to cache/local", userId, faculty, e);
             return Collections.emptyList();
         }
     }

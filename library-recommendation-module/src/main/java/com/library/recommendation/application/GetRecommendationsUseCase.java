@@ -5,4 +5,6 @@ import java.util.List;
 
 public interface GetRecommendationsUseCase {
     List<RecommendationResponse> execute(Long userId, int limit);
+
+    List<RecommendationResponse> execute(Long userId, String faculty, int limit);
 }

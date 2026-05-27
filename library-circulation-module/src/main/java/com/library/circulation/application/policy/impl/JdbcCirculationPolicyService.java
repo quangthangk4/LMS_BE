@@ -24,6 +24,7 @@ public class JdbcCirculationPolicyService implements CirculationPolicyService {
                cp.max_active_borrows,
                cp.max_active_reservations,
                cp.overdue_fine_per_day,
+               cp.default_deposit_amount,
                cp.block_borrow_when_unpaid_fines,
                cp.updated_by_admin_id,
                u.full_name AS updated_by_admin_name,
@@ -40,6 +41,7 @@ public class JdbcCirculationPolicyService implements CirculationPolicyService {
             max_active_borrows = :maxActiveBorrows,
             max_active_reservations = :maxActiveReservations,
             overdue_fine_per_day = :overdueFinePerDay,
+            default_deposit_amount = :defaultDepositAmount,
             block_borrow_when_unpaid_fines = :blockBorrowWhenUnpaidFines,
             updated_by_admin_id = :adminId,
             updated_at = NOW()
@@ -58,6 +60,7 @@ public class JdbcCirculationPolicyService implements CirculationPolicyService {
             rs.getInt("max_active_borrows"),
             rs.getInt("max_active_reservations"),
             rs.getBigDecimal("overdue_fine_per_day"),
+            rs.getBigDecimal("default_deposit_amount"),
             rs.getBoolean("block_borrow_when_unpaid_fines"),
             rs.getObject("updated_by_admin_id") != null ? rs.getLong("updated_by_admin_id") : null,
             rs.getString("updated_by_admin_name"),
@@ -76,6 +79,7 @@ public class JdbcCirculationPolicyService implements CirculationPolicyService {
                 .addValue("maxActiveBorrows", request.maxActiveBorrows())
                 .addValue("maxActiveReservations", request.maxActiveReservations())
                 .addValue("overdueFinePerDay", request.overdueFinePerDay())
+                .addValue("defaultDepositAmount", request.defaultDepositAmount())
                 .addValue("blockBorrowWhenUnpaidFines", request.blockBorrowWhenUnpaidFines())
                 .addValue("adminId", adminId)
         );
@@ -92,6 +96,7 @@ public class JdbcCirculationPolicyService implements CirculationPolicyService {
                 "maxActiveBorrows", request.maxActiveBorrows(),
                 "maxActiveReservations", request.maxActiveReservations(),
                 "overdueFinePerDay", request.overdueFinePerDay(),
+                "defaultDepositAmount", request.defaultDepositAmount(),
                 "blockBorrowWhenUnpaidFines", request.blockBorrowWhenUnpaidFines()
             )
         );
@@ -99,12 +104,13 @@ public class JdbcCirculationPolicyService implements CirculationPolicyService {
             "LIB_POLICY_UPDATED",
             "Admin đã cập nhật quy định mượn trả",
             String.format(
-                "Quy định mới: nhận sách trong %d giờ, mượn %d ngày, tối đa %d sách/%d đặt trước, phí trễ hạn %sđ/ngày, chặn nợ phí: %s.",
+                "Quy định mới: nhận sách trong %d giờ, mượn %d ngày, tối đa %d sách/%d đặt trước, phí trễ hạn %sđ/ngày, cọc mượn %sđ/cuốn, chặn nợ phí: %s.",
                 request.pickupDeadlineHours(),
                 request.defaultLoanDays(),
                 request.maxActiveBorrows(),
                 request.maxActiveReservations(),
                 request.overdueFinePerDay(),
+                request.defaultDepositAmount(),
                 Boolean.TRUE.equals(request.blockBorrowWhenUnpaidFines()) ? "bật" : "tắt"
             ),
             "/librarianpage/settings",

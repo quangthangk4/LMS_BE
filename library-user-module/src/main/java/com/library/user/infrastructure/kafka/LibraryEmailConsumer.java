@@ -56,11 +56,25 @@ public class LibraryEmailConsumer {
                     actionUrl(data, "/userpage/my-books"),
                     actionUrl(data, "/userpage/my-books")
                 );
+                case LibraryEmailMessage.PICKUP_CONFIRMED -> emailService.sendEmailWithArgs(
+                    to, EmailTemplates.PICKUP_CONFIRMED,
+                    fullName,
+                    data.get("publicationTitle"),
+                    data.get("dueDate"),
+                    data.getOrDefault("depositAmount", "0đ"),
+                    actionUrl(data, "/userpage/my-books"),
+                    actionUrl(data, "/userpage/my-books")
+                );
                 case LibraryEmailMessage.RETURN_CONFIRMED -> emailService.sendEmailWithArgs(
                     to, EmailTemplates.RETURN_CONFIRMED,
                     fullName,
                     data.get("publicationTitle"),
                     data.get("returnDate"),
+                    data.getOrDefault("depositAmount", "0đ"),
+                    data.getOrDefault("grossFineAmount", "0đ"),
+                    data.getOrDefault("depositAppliedAmount", "0đ"),
+                    data.getOrDefault("depositRefundAmount", "0đ"),
+                    data.getOrDefault("additionalAmountDue", "0đ"),
                     actionUrl(data, "/userpage/my-books"),
                     actionUrl(data, "/userpage/my-books")
                 );

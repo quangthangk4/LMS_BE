@@ -8,6 +8,7 @@ import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
+import com.library.circulation.application.deposit.BorrowDepositService;
 import com.library.circulation.application.policy.CirculationPolicy;
 import com.library.circulation.application.policy.CirculationPolicyService;
 import com.library.circulation.application.transaction.impl.ReturnBookUseCaseImpl;
@@ -21,6 +22,7 @@ import com.library.circulation.infrastructure.persistence.repository.FineJpaRepo
 import com.library.circulation.infrastructure.service.ReservationAssignmentService;
 import com.library.shared.exception.AppException;
 import com.library.shared.exception.ErrorCode;
+import com.library.shared.service.LibrarianNotificationService;
 import com.library.shared.port.ItemSnapshot;
 import com.library.shared.port.ItemStatusPort;
 import java.math.BigDecimal;
@@ -50,6 +52,8 @@ class ReturnBookUseCaseTest {
     @Mock private KafkaTemplate<String, Object> kafkaTemplate;
     @Mock private ReservationAssignmentService reservationAssignmentService;
     @Mock private CirculationPolicyService policyService;
+    @Mock private BorrowDepositService borrowDepositService;
+    @Mock private LibrarianNotificationService librarianNotificationService;
 
     @InjectMocks private ReturnBookUseCaseImpl useCase;
 
@@ -93,6 +97,8 @@ class ReturnBookUseCaseTest {
         when(transactionJpaRepository.findById(TRANSACTION_ID))
             .thenReturn(Optional.of(buildEntity(tomorrow)));
         when(transactionJpaRepository.save(any())).thenAnswer(inv -> inv.getArgument(0));
+        when(borrowDepositService.settleOnReturn(TRANSACTION_ID, LIBRARIAN_ID))
+            .thenReturn(noDepositSettlement());
 
         // When
         ReturnResponse result = useCase.execute(LIBRARIAN_ID, new ReturnCommand(BARCODE));
@@ -117,6 +123,8 @@ class ReturnBookUseCaseTest {
             .thenReturn(Optional.of(buildEntity(threeDaysAgo)));
         when(transactionJpaRepository.save(any())).thenAnswer(inv -> inv.getArgument(0));
         when(fineJpaRepository.save(any())).thenAnswer(inv -> inv.getArgument(0));
+        when(borrowDepositService.settleOnReturn(TRANSACTION_ID, LIBRARIAN_ID))
+            .thenReturn(noDepositSettlement());
         when(policyService.getPolicy()).thenReturn(new CirculationPolicy(
             48,
             14,
@@ -137,6 +145,17 @@ class ReturnBookUseCaseTest {
         assertThat(result.overdueFineAmount())
             .isEqualByComparingTo(new BigDecimal("3000")); // 3 ngày × 1000đ
         verify(fineJpaRepository).save(any(FineEntity.class));
+    }
+
+    private BorrowDepositService.DepositSettlement noDepositSettlement() {
+        return BorrowDepositService.DepositSettlement.builder()
+            .depositAmount(BigDecimal.ZERO)
+            .depositStatus("NOT_REQUIRED")
+            .grossFineAmount(BigDecimal.ZERO)
+            .depositAppliedAmount(BigDecimal.ZERO)
+            .depositRefundAmount(BigDecimal.ZERO)
+            .additionalAmountDue(BigDecimal.ZERO)
+            .build();
     }
 
     @Test

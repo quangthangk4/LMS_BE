@@ -53,6 +53,7 @@ public class CirculationPolicyController {
             .maxActiveBorrows(policy.maxActiveBorrows())
             .maxActiveReservations(policy.maxActiveReservations())
             .overdueFinePerDay(policy.overdueFinePerDay())
+            .defaultDepositAmount(policy.defaultDepositAmount())
             .blockBorrowWhenUnpaidFines(policy.blockBorrowWhenUnpaidFines())
             .updatedByAdminId(policy.updatedByAdminId())
             .updatedByAdminName(policy.updatedByAdminName())

@@ -9,9 +9,34 @@ public record CirculationPolicy(
     Integer maxActiveBorrows,
     Integer maxActiveReservations,
     BigDecimal overdueFinePerDay,
+    BigDecimal defaultDepositAmount,
     Boolean blockBorrowWhenUnpaidFines,
     Long updatedByAdminId,
     String updatedByAdminName,
     Instant updatedAt
 ) {
+    public CirculationPolicy(
+        Integer pickupDeadlineHours,
+        Integer defaultLoanDays,
+        Integer maxActiveBorrows,
+        Integer maxActiveReservations,
+        BigDecimal overdueFinePerDay,
+        Boolean blockBorrowWhenUnpaidFines,
+        Long updatedByAdminId,
+        String updatedByAdminName,
+        Instant updatedAt
+    ) {
+        this(
+            pickupDeadlineHours,
+            defaultLoanDays,
+            maxActiveBorrows,
+            maxActiveReservations,
+            overdueFinePerDay,
+            BigDecimal.ZERO,
+            blockBorrowWhenUnpaidFines,
+            updatedByAdminId,
+            updatedByAdminName,
+            updatedAt
+        );
+    }
 }

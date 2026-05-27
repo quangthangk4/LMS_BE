@@ -13,7 +13,13 @@ public record ReportIssueResponse(
 
     String publicationTitle,
     String itemStatus,
-    List<FineDetail> finesCreated
+    List<FineDetail> finesCreated,
+    BigDecimal depositAmount,
+    String depositStatus,
+    BigDecimal grossFineAmount,
+    BigDecimal depositAppliedAmount,
+    BigDecimal depositRefundAmount,
+    BigDecimal additionalAmountDue
 ) {
     @Builder
     public record FineDetail(

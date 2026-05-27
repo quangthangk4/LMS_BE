@@ -53,8 +53,12 @@ public class AiGatewayService implements AiPublicationProcessingPort {
     }
 
     public AiRecommendationResult getRecommendations(Long userId, int limit) {
+        return getRecommendations(userId, null, limit);
+    }
+
+    public AiRecommendationResult getRecommendations(Long userId, String faculty, int limit) {
         try {
-            AiRecommendationRequest request = new AiRecommendationRequest(userId, limit);
+            AiRecommendationRequest request = new AiRecommendationRequest(userId, faculty, limit);
             AiRecommendationResult response = restClient.post()
                 .uri("/api/v1/recommendations")
                 .contentType(MediaType.APPLICATION_JSON)
@@ -67,14 +71,14 @@ public class AiGatewayService implements AiPublicationProcessingPort {
             }
             return response;
         } catch (Exception e) {
-            log.warn("AI recommendation request failed for userId={}: {}", userId, e.getMessage());
+            log.warn("AI recommendation request failed for userId={}, faculty={}: {}", userId, faculty, e.getMessage());
             return new AiRecommendationResult(List.of(), "AI_GATEWAY_UNAVAILABLE");
         }
     }
 
     public AiRecommendationResult refreshRecommendations(Long userId, int limit) {
         try {
-            AiRecommendationRequest request = new AiRecommendationRequest(userId, limit);
+            AiRecommendationRequest request = new AiRecommendationRequest(userId, null, limit);
             AiRecommendationResult response = restClient.post()
                 .uri("/api/v1/recommendations/refresh")
                 .contentType(MediaType.APPLICATION_JSON)
@@ -247,6 +251,7 @@ public class AiGatewayService implements AiPublicationProcessingPort {
 
     public record AiRecommendationRequest(
         @JsonProperty("user_id") Long userId,
+        @JsonProperty("faculty") String faculty,
         Integer limit
     ) {
     }

@@ -3,6 +3,7 @@ package com.library.user.domain.enums;
 public enum NotificationType {
     BOOK_RESERVED,
     BOOK_AVAILABLE,
+    WISHLIST_BOOK_AVAILABLE,
     BORROW_SUCCESS,
     BORROW_CANCELLED_EXPIRED,
     RESERVATION_EXPIRED,

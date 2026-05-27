@@ -1,6 +1,7 @@
 package com.library.catalog.dto.request.publication;
 
 import com.library.catalog.domain.enums.FacultyTarget;
+import com.library.catalog.domain.enums.PublicationFormat;
 
 public record UpdatePublicationRequest(
         String isbn,
@@ -11,6 +12,8 @@ public record UpdatePublicationRequest(
         Integer numberOfPages,
         Integer publicationYear,
         Integer edition,
+        PublicationFormat publicationFormat,
+        String editionNote,
         String coverImageUrl,
         String size,
         Double weight,

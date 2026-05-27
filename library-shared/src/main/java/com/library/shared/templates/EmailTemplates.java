@@ -108,6 +108,28 @@ public enum EmailTemplates {
           """
   ),
 
+  // args: fullName, publicationTitle, dueDate, depositAmount, actionUrl, actionUrl
+  PICKUP_CONFIRMED(
+      "[SmartLibrary] Xác nhận giao sách và tiền cọc",
+      """
+          <!doctype html>
+          <html><body style="margin:0;background:#f3f4f6;font-family:Arial,Helvetica,sans-serif;color:#111827;">
+            <div style="max-width:640px;margin:0 auto;padding:28px 16px;"><div style="background:#ffffff;border:1px solid #e5e7eb;border-radius:12px;overflow:hidden;">
+              <div style="background:#059669;padding:22px 28px;color:#ffffff;"><div style="font-size:13px;letter-spacing:.08em;text-transform:uppercase;opacity:.9;">Library74</div><h1 style="margin:8px 0 0;font-size:24px;">Giao sách thành công</h1></div>
+              <div style="padding:28px;">
+                <p style="margin:0 0 14px;font-size:16px;">Xin chào <strong>%s</strong>,</p>
+                <p style="margin:0 0 18px;font-size:15px;line-height:1.7;color:#374151;">Bạn đã nhận sách <strong>"%s"</strong>. Hạn trả sách là <strong>%s</strong>.</p>
+                <table style="width:100%%;border-collapse:collapse;margin:20px 0;background:#f9fafb;border:1px solid #e5e7eb;border-radius:8px;overflow:hidden;">
+                  <tr><td style="padding:12px;color:#6b7280;width:42%%;">Tiền cọc đã thu</td><td style="padding:12px;font-weight:700;color:#047857;">%s</td></tr>
+                </table>
+                <p style="margin:0 0 18px;font-size:14px;line-height:1.7;color:#6b7280;">Khoản cọc này sẽ được hoàn hoặc cấn trừ với phí phạt khi bạn trả sách.</p>
+                <p style="margin:24px 0;text-align:center;"><a href="%s" style="display:inline-block;background:#059669;color:#ffffff;text-decoration:none;font-weight:700;padding:13px 24px;border-radius:8px;">Xem sách của tôi</a></p>
+              </div>
+            </div></div>
+          </body></html>
+          """
+  ),
+
   // args: fullName, publicationTitle, dueDate, actionUrl, actionUrl
   DUE_DATE_WARNING(
       "[SmartLibrary] Nhắc nhở hạn trả sách",
@@ -126,7 +148,7 @@ public enum EmailTemplates {
           """
   ),
 
-  // args: fullName, publicationTitle, returnDate, actionUrl, actionUrl
+  // args: fullName, publicationTitle, returnDate, depositAmount, grossFineAmount, depositAppliedAmount, depositRefundAmount, additionalAmountDue, actionUrl, actionUrl
   RETURN_CONFIRMED(
       "[SmartLibrary] Xác nhận trả sách thành công",
       """
@@ -137,6 +159,13 @@ public enum EmailTemplates {
               <div style="padding:28px;">
                 <p style="margin:0 0 14px;font-size:16px;">Xin chào <strong>%s</strong>,</p>
                 <p style="margin:0 0 18px;font-size:15px;line-height:1.7;color:#374151;">Bạn đã trả sách <strong>"%s"</strong> thành công vào ngày <strong>%s</strong>.</p>
+                <table style="width:100%%;border-collapse:collapse;margin:20px 0;background:#f9fafb;border:1px solid #e5e7eb;border-radius:8px;overflow:hidden;">
+                  <tr><td style="padding:12px;color:#6b7280;width:42%%;">Cọc đã thu</td><td style="padding:12px;font-weight:700;">%s</td></tr>
+                  <tr><td style="padding:12px;color:#6b7280;border-top:1px solid #e5e7eb;">Phạt gốc</td><td style="padding:12px;border-top:1px solid #e5e7eb;font-weight:700;color:#b91c1c;">%s</td></tr>
+                  <tr><td style="padding:12px;color:#6b7280;border-top:1px solid #e5e7eb;">Đã cấn cọc</td><td style="padding:12px;border-top:1px solid #e5e7eb;font-weight:700;color:#b45309;">%s</td></tr>
+                  <tr><td style="padding:12px;color:#6b7280;border-top:1px solid #e5e7eb;">Hoàn lại</td><td style="padding:12px;border-top:1px solid #e5e7eb;font-weight:700;color:#047857;">%s</td></tr>
+                  <tr><td style="padding:12px;color:#6b7280;border-top:1px solid #e5e7eb;">Cần đóng thêm</td><td style="padding:12px;border-top:1px solid #e5e7eb;font-weight:700;color:#b91c1c;">%s</td></tr>
+                </table>
                 <p style="margin:0 0 18px;font-size:15px;line-height:1.7;color:#374151;">Nếu có thời gian, hãy đánh giá tài liệu để giúp các bạn đọc khác chọn sách tốt hơn.</p>
                 <p style="margin:24px 0;text-align:center;"><a href="%s" style="display:inline-block;background:#5b5ce2;color:#ffffff;text-decoration:none;font-weight:700;padding:13px 24px;border-radius:8px;">Đánh giá tài liệu</a></p>
               </div>

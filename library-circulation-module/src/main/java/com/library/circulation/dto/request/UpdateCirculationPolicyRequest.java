@@ -22,6 +22,9 @@ public record UpdateCirculationPolicyRequest(
     @NotNull @DecimalMin("0")
     BigDecimal overdueFinePerDay,
 
+    @NotNull @DecimalMin("0")
+    BigDecimal defaultDepositAmount,
+
     @NotNull
     Boolean blockBorrowWhenUnpaidFines
 ) {

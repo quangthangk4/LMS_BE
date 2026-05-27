@@ -1,6 +1,7 @@
 package com.library.catalog.application.impl;
 
 import com.library.catalog.application.CreatePublicationUseCase;
+import com.library.catalog.domain.enums.PublicationFormat;
 import com.library.catalog.domain.valueobject.ISBN;
 import com.library.catalog.dto.request.publication.CreatePublicationRequest;
 import com.library.catalog.infrastructure.persistence.entity.PublicationEntity;
@@ -36,6 +37,8 @@ public class CreatePublicationUseCaseImpl implements CreatePublicationUseCase {
         entity.setAiTargetAudience(request.aiTargetAudience());
         entity.setPublicationYear(request.publicationYear());
         entity.setEdition(request.edition());
+        entity.setPublicationFormat(request.publicationFormat() != null ? request.publicationFormat() : PublicationFormat.PRINT_BOOK);
+        entity.setEditionNote(request.editionNote());
         entity.setSize(request.size());
         entity.setWeight(request.weight());
         entity.setCoverImageUrl(request.coverImageUrl());

@@ -44,6 +44,7 @@ public class SecurityConfig {
       "/api/v1/authors/**",
       "/api/v1/publications/{id}/ratings",
       "/api/v1/publications/{publicationId}/ratings/summary",
+      "/api/v1/circulation-policies",
   };
 
   public static final String[] SWAGGER_ENDPOINTS = {

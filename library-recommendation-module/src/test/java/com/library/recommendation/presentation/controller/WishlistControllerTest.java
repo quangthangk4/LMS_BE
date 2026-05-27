@@ -57,6 +57,8 @@ class WishlistControllerTest {
             "https://example.com/cover.jpg",
             "Robert C. Martin",
             2008,
+            3,
+            1,
             null
         );
 

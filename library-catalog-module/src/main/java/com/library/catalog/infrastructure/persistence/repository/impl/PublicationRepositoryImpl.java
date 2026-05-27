@@ -1,6 +1,7 @@
 package com.library.catalog.infrastructure.persistence.repository.impl;
 
 import com.library.catalog.domain.enums.FacultyTarget;
+import com.library.catalog.domain.enums.PublicationFormat;
 import com.library.catalog.application.i18n.MetadataLanguage;
 import com.library.catalog.dto.response.author.AuthorOverviewResponse;
 import com.library.catalog.dto.response.category.CategoryOverviewResponse;
@@ -144,7 +145,8 @@ public class PublicationRepositoryImpl implements PublicationRepositoryCustom {
             p.number_of_pages,
             COALESCE(NULLIF(pt.ai_summary, ''), p.ai_summary) AS ai_summary,
             p.ai_target_audience, p.file_url,
-            p.publication_year, p.edition, p.cover_image_url, p.size, p.weight,
+            p.publication_year, p.edition, p.publication_format, p.edition_note,
+            p.cover_image_url, p.size, p.weight,
             p.call_number,
             COALESCE(NULLIF(pt.table_of_contents, ''), p.table_of_contents) AS table_of_contents,
             (SELECT COUNT(*) FROM borrowing_transactions bt
@@ -186,6 +188,8 @@ public class PublicationRepositoryImpl implements PublicationRepositoryCustom {
         .fileUrl((String) pub.get("file_url"))
         .publicationYear(toInt(pub.get("publication_year")))
         .edition(toInt(pub.get("edition")))
+        .publicationFormat(toEnum(pub.get("publication_format"), PublicationFormat.class))
+        .editionNote((String) pub.get("edition_note"))
         .coverImageUrl((String) pub.get("cover_image_url"))
         .size((String) pub.get("size"))
         .weight(toDouble(pub.get("weight")))

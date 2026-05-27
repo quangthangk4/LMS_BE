@@ -53,6 +53,7 @@ public class GetAllBorrowingTransactionUseCaseImpl implements GetAllBorrowingTra
 
         StringBuilder baseFromWhere = new StringBuilder("""
             FROM borrowing_transactions t
+            LEFT JOIN items i ON i.id = t.item_id
             LEFT JOIN users u ON u.id = t.user_id
             LEFT JOIN users issue_librarian ON issue_librarian.id = t.librarian_id_issue
             LEFT JOIN users return_librarian ON return_librarian.id = t.librarian_id_return
@@ -87,6 +88,7 @@ public class GetAllBorrowingTransactionUseCaseImpl implements GetAllBorrowingTra
             WHERE (:keyword = ''
                 OR LOWER(u.full_name) LIKE LOWER(CONCAT('%', :keyword, '%'))
                 OR LOWER(u.student_id) LIKE LOWER(CONCAT('%', :keyword, '%'))
+                OR LOWER(i.barcode) LIKE LOWER(CONCAT('%', :keyword, '%'))
                 OR CAST(t.id AS TEXT) LIKE CONCAT('%', :keyword, '%'))
             """);
 
@@ -116,7 +118,14 @@ public class GetAllBorrowingTransactionUseCaseImpl implements GetAllBorrowingTra
               u.student_id,
               u.email,
               u.phone_number,
+              i.barcode,
               COALESCE(fa.fine_amount, 0) AS fine_amount,
+              COALESCE(t.deposit_gross_fine_amount, COALESCE(fa.fine_amount, 0)) AS gross_fine_amount,
+              COALESCE(t.deposit_amount, 0) AS deposit_amount,
+              t.deposit_status,
+              COALESCE(t.deposit_applied_amount, 0) AS deposit_applied_amount,
+              COALESCE(t.deposit_refund_amount, 0) AS deposit_refund_amount,
+              COALESCE(t.deposit_additional_amount_due, 0) AS additional_amount_due,
               fa.fine_types,
               CASE
                 WHEN COALESCE(fa.fine_count, 0) = 0 THEN NULL
@@ -148,9 +157,16 @@ public class GetAllBorrowingTransactionUseCaseImpl implements GetAllBorrowingTra
                 .studentId(rs.getString("student_id"))
                 .email(rs.getString("email"))
                 .phoneNumber(rs.getString("phone_number"))
+                .barcode(rs.getString("barcode"))
                 .fineAmount((BigDecimal) rs.getObject("fine_amount"))
+                .grossFineAmount((BigDecimal) rs.getObject("gross_fine_amount"))
                 .finePaymentStatus(toPaymentStatus(rs.getString("fine_payment_status")))
                 .fineTypes(rs.getString("fine_types"))
+                .depositAmount((BigDecimal) rs.getObject("deposit_amount"))
+                .depositStatus(rs.getString("deposit_status"))
+                .depositAppliedAmount((BigDecimal) rs.getObject("deposit_applied_amount"))
+                .depositRefundAmount((BigDecimal) rs.getObject("deposit_refund_amount"))
+                .additionalAmountDue((BigDecimal) rs.getObject("additional_amount_due"))
                 .important(rs.getBoolean("important"))
                 .note(rs.getString("note"))
                 .createdAt(toInstant(rs.getTimestamp("created_at")))

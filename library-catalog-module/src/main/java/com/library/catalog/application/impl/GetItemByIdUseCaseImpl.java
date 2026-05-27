@@ -33,6 +33,11 @@ public class GetItemByIdUseCaseImpl implements GetItemByIdUseCase {
         .location(item.getLocation())
         .status(item.getStatus())
         .condition(item.getCondition())
+        .copyType(item.getCopyType())
+        .bindingType(item.getBindingType())
+        .conditionNote(item.getConditionNote())
+        .acquiredDate(item.getAcquiredDate())
+        .acquisitionSource(item.getAcquisitionSource())
         .publicationTitle(publication.getPublication().getTitle())
         .publication(publication)
         .build();

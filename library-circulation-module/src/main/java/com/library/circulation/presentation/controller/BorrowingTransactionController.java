@@ -9,17 +9,22 @@ import com.library.circulation.application.transaction.GetMyTransactionsUseCase;
 import com.library.circulation.application.transaction.LookupForPickupUseCase;
 import com.library.circulation.application.transaction.GetStudentActiveTransactionsUseCase;
 import com.library.circulation.application.transaction.LookupActiveTransactionUseCase;
+import com.library.circulation.application.transaction.LookupLostBookRecoveryPreviewUseCase;
 import com.library.circulation.application.transaction.ReportIssueUseCase;
+import com.library.circulation.application.transaction.RestoreLostBookUseCase;
 import com.library.circulation.application.transaction.ReturnBookUseCase;
 import com.library.circulation.dto.request.BorrowRequestCommand;
 import com.library.circulation.dto.request.DirectBorrowCommand;
 import com.library.circulation.dto.request.ReportIssueCommand;
+import com.library.circulation.dto.request.RestoreLostBookCommand;
 import com.library.circulation.dto.request.ReturnCommand;
 import com.library.circulation.dto.response.BorrowTransactionResponse;
 import com.library.circulation.dto.response.LookupTransactionResponse;
+import com.library.circulation.dto.response.LostBookRecoveryPreviewResponse;
 import com.library.circulation.dto.response.ActiveTransactionResponse;
 import com.library.circulation.dto.response.StudentActiveTransactionsResponse;
 import com.library.circulation.dto.response.ReportIssueResponse;
+import com.library.circulation.dto.response.RestoreLostBookResponse;
 import com.library.circulation.dto.response.ReturnResponse;
 import com.library.circulation.dto.response.TransactionListResponse;
 import com.library.circulation.dto.response.UserTransactionResponse;
@@ -57,8 +62,10 @@ public class BorrowingTransactionController {
   private final LookupForPickupUseCase lookupForPickupUseCase;
   private final GetStudentActiveTransactionsUseCase getStudentActiveTransactionsUseCase;
   private final LookupActiveTransactionUseCase lookupActiveTransactionUseCase;
+  private final LookupLostBookRecoveryPreviewUseCase lookupLostBookRecoveryPreviewUseCase;
   private final ReturnBookUseCase returnBookUseCase;
   private final ReportIssueUseCase reportIssueUseCase;
+  private final RestoreLostBookUseCase restoreLostBookUseCase;
   private final com.library.shared.util.SecurityEvaluator security;
 
   @RequiresRole(RoleConstants.LIBRARIAN)
@@ -172,5 +179,23 @@ public class BorrowingTransactionController {
       @Valid @RequestBody ReportIssueCommand command) {
     Long librarianId = security.getCurrentUserId();
     return ApiResponseApp.success(reportIssueUseCase.execute(transactionId, librarianId, command));
+  }
+
+  @GetMapping("/{id}/restore-lost/preview")
+  @RequiresRole(RoleConstants.LIBRARIAN)
+  @Operation(summary = "Preview a lost-book recovery by transaction id (librarian)")
+  public ApiResponseApp<LostBookRecoveryPreviewResponse> previewLostBookRecovery(
+      @PathVariable("id") Long transactionId) {
+    return ApiResponseApp.success(lookupLostBookRecoveryPreviewUseCase.execute(transactionId));
+  }
+
+  @PostMapping("/{id}/restore-lost")
+  @RequiresRole(RoleConstants.LIBRARIAN)
+  @Operation(summary = "Restore a book copy that was reported lost and record any refund (librarian)")
+  public ApiResponseApp<RestoreLostBookResponse> restoreLostBook(
+      @PathVariable("id") Long transactionId,
+      @Valid @RequestBody RestoreLostBookCommand command) {
+    Long librarianId = security.getCurrentUserId();
+    return ApiResponseApp.success(restoreLostBookUseCase.execute(transactionId, librarianId, command));
   }
 }

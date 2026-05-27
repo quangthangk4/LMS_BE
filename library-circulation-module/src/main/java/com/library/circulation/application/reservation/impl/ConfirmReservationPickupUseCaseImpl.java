@@ -1,5 +1,7 @@
 package com.library.circulation.application.reservation.impl;
 
+import com.library.circulation.application.deposit.BorrowDepositService;
+import com.library.circulation.application.policy.CirculationPolicy;
 import com.library.circulation.application.policy.CirculationPolicyService;
 import com.library.circulation.application.reservation.ConfirmReservationPickupUseCase;
 import com.library.circulation.domain.enums.ReservationStatus;
@@ -12,6 +14,7 @@ import com.library.circulation.infrastructure.persistence.repository.Reservation
 import com.library.shared.exception.AppException;
 import com.library.shared.exception.ErrorCode;
 import com.library.shared.kafka.KafkaTopics;
+import com.library.shared.kafka.event.LibraryEmailMessage;
 import com.library.shared.kafka.event.NotificationMessage;
 import com.library.shared.service.LibrarianNotificationService;
 import com.library.shared.util.TsIdGenerator;
@@ -42,6 +45,7 @@ public class ConfirmReservationPickupUseCaseImpl implements ConfirmReservationPi
     private final CirculationPolicyService policyService;
     private final NamedParameterJdbcTemplate jdbcTemplate;
     private final LibrarianNotificationService librarianNotificationService;
+    private final BorrowDepositService borrowDepositService;
 
     @Override
     @Transactional
@@ -68,7 +72,8 @@ public class ConfirmReservationPickupUseCaseImpl implements ConfirmReservationPi
         reservationJpaRepository.save(reservation);
 
         // 5. Create BorrowingTransaction
-        LocalDate dueDate = LocalDate.now(ZONE).plusDays(policyService.getPolicy().defaultLoanDays());
+        CirculationPolicy policy = policyService.getPolicy();
+        LocalDate dueDate = LocalDate.now(ZONE).plusDays(policy.defaultLoanDays());
         
         BorrowingTransactionEntity transaction = BorrowingTransactionEntity.builder()
             .userId(reservation.getUserId())
@@ -83,20 +88,34 @@ public class ConfirmReservationPickupUseCaseImpl implements ConfirmReservationPi
         transaction.setId(TsIdGenerator.next());
 
         transactionJpaRepository.save(transaction);
+        transactionJpaRepository.flush();
 
         // 6. Update Item Status
         itemStatusPort.updateStatus(reservation.getAssignedItemId(), "BORROWED");
+        BorrowDepositService.DepositSnapshot deposit = borrowDepositService.collectForBorrow(
+            transaction.getId(), librarianId, policy.defaultDepositAmount());
 
         // 7. Notify User
         kafkaTemplate.send(KafkaTopics.NOTIFICATION_SEND, new NotificationMessage(
             reservation.getUserId(),
             "PICKUP_CONFIRMED",
             "Sách đã được giao (từ đặt trước)",
-            String.format("Bạn đã nhận '%s' đặt trước. Hạn trả: %s.",
+            String.format("Bạn đã nhận '%s' đặt trước. Hạn trả: %s. Tiền cọc đã thu: %sđ.",
                 item.publicationTitle(),
-                dueDate.format(DUE_DATE_FMT)),
+                dueDate.format(DUE_DATE_FMT),
+                deposit.depositAmount()),
             "/userpage/my-books?highlight=" + transaction.getId(),
             transaction.getId()
+        ));
+        kafkaTemplate.send(KafkaTopics.LIBRARY_EMAIL, new LibraryEmailMessage(
+            reservation.getUserId(),
+            LibraryEmailMessage.PICKUP_CONFIRMED,
+            Map.of(
+                "publicationTitle", item.publicationTitle(),
+                "dueDate", dueDate.format(DUE_DATE_FMT),
+                "depositAmount", formatVnd(deposit.depositAmount()),
+                "actionPath", "/userpage/my-books?highlight=" + transaction.getId()
+            )
         ));
         Map<String, Object> student = jdbcTemplate.queryForMap(
             "SELECT full_name, student_id FROM users WHERE id = :userId",
@@ -105,9 +124,9 @@ public class ConfirmReservationPickupUseCaseImpl implements ConfirmReservationPi
         librarianNotificationService.notifyAll(
             "LIB_CIRC_PICKUP",
             "Sinh viên đã nhận sách đặt trước",
-            String.format("%s (%s) đã nhận '%s' - bản sao %s từ lượt đặt trước. Hạn trả: %s.",
+            String.format("%s (%s) đã nhận '%s' - bản sao %s từ lượt đặt trước. Hạn trả: %s. Đã thu cọc: %sđ.",
                 student.get("full_name"), student.get("student_id"), item.publicationTitle(), item.barcode(),
-                dueDate.format(DUE_DATE_FMT)),
+                dueDate.format(DUE_DATE_FMT), deposit.depositAmount()),
             "/librarianpage/transactions?highlight=" + transaction.getId(),
             transaction.getId()
         );
@@ -125,6 +144,12 @@ public class ConfirmReservationPickupUseCaseImpl implements ConfirmReservationPi
             .location(item.location())
             .dueDate(transaction.getDueDate())
             .status(transaction.getStatus())
+            .depositAmount(deposit.depositAmount())
+            .depositStatus(deposit.depositStatus())
             .build();
+    }
+
+    private String formatVnd(java.math.BigDecimal amount) {
+        return (amount == null ? java.math.BigDecimal.ZERO : amount).toPlainString() + "đ";
     }
 }

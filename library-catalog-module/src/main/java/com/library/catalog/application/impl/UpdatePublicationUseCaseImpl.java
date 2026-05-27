@@ -1,6 +1,7 @@
 package com.library.catalog.application.impl;
 
 import com.library.catalog.application.UpdatePublicationUseCase;
+import com.library.catalog.domain.enums.PublicationFormat;
 import com.library.catalog.domain.valueobject.ISBN;
 import com.library.catalog.dto.request.publication.UpdatePublicationRequest;
 import com.library.catalog.infrastructure.persistence.entity.PublicationEntity;
@@ -35,6 +36,8 @@ public class UpdatePublicationUseCaseImpl implements UpdatePublicationUseCase {
         entity.setNumberOfPages(request.numberOfPages());
         entity.setPublicationYear(request.publicationYear());
         entity.setEdition(request.edition());
+        entity.setPublicationFormat(request.publicationFormat() != null ? request.publicationFormat() : PublicationFormat.PRINT_BOOK);
+        entity.setEditionNote(request.editionNote());
         entity.setCoverImageUrl(request.coverImageUrl());
         entity.setSize(request.size());
         entity.setWeight(request.weight());

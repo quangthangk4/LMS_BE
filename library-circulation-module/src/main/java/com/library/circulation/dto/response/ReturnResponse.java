@@ -15,5 +15,11 @@ public record ReturnResponse(
     String barcode,
     LocalDate returnedDate,
     boolean overdue,
-    BigDecimal overdueFineAmount
+    BigDecimal overdueFineAmount,
+    BigDecimal depositAmount,
+    String depositStatus,
+    BigDecimal grossFineAmount,
+    BigDecimal depositAppliedAmount,
+    BigDecimal depositRefundAmount,
+    BigDecimal additionalAmountDue
 ) {}

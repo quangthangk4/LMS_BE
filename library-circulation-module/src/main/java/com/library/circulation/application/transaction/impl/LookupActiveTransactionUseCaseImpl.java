@@ -20,6 +20,7 @@ public class LookupActiveTransactionUseCaseImpl implements LookupActiveTransacti
     private static final String SQL = """
         SELECT t.id AS transaction_id, t.user_id,
                t.borrowed_date, t.due_date, t.status,
+               t.deposit_amount, t.deposit_status,
                u.student_id, u.full_name,
                i.barcode, i.branch, i.location,
                p.title AS publication_title
@@ -57,6 +58,8 @@ public class LookupActiveTransactionUseCaseImpl implements LookupActiveTransacti
             .dueDate(row.get("due_date") != null
                 ? ((java.sql.Date) row.get("due_date")).toLocalDate() : null)
             .status(TransactionStatus.valueOf((String) row.get("status")))
+            .depositAmount((java.math.BigDecimal) row.get("deposit_amount"))
+            .depositStatus((String) row.get("deposit_status"))
             .build();
     }
 }

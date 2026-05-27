@@ -3,6 +3,7 @@ package com.library.circulation.dto.response;
 import com.fasterxml.jackson.databind.annotation.JsonSerialize;
 import com.fasterxml.jackson.databind.ser.std.ToStringSerializer;
 import com.library.circulation.domain.enums.TransactionStatus;
+import java.math.BigDecimal;
 import java.time.Instant;
 import lombok.Builder;
 import lombok.Data;
@@ -26,4 +27,6 @@ public class LookupTransactionResponse {
     private String location;
     private Instant pickedUpDeadline;
     private TransactionStatus status;
+    private BigDecimal depositAmount;
+    private String depositStatus;
 }

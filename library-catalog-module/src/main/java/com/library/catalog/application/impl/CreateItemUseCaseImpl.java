@@ -2,6 +2,8 @@ package com.library.catalog.application.impl;
 
 import com.library.catalog.application.CreateItemUseCase;
 import com.library.catalog.domain.entities.ItemStatus;
+import com.library.catalog.domain.enums.BindingType;
+import com.library.catalog.domain.enums.CopyType;
 import com.library.catalog.infrastructure.persistence.entity.ItemEntity;
 import com.library.catalog.infrastructure.persistence.entity.PublicationEntity;
 import com.library.catalog.infrastructure.persistence.repository.ItemJpaRepository;
@@ -47,6 +49,11 @@ public class CreateItemUseCaseImpl implements CreateItemUseCase {
         entity.setBranch(request.getBranch());
         entity.setLocation(request.getLocation());
         entity.setCondition(request.getCondition());
+        entity.setCopyType(request.getCopyType() != null ? request.getCopyType() : CopyType.ORIGINAL);
+        entity.setBindingType(request.getBindingType() != null ? request.getBindingType() : BindingType.UNKNOWN);
+        entity.setConditionNote(request.getConditionNote());
+        entity.setAcquiredDate(request.getAcquiredDate());
+        entity.setAcquisitionSource(request.getAcquisitionSource());
         entity.setStatus(ItemStatus.AVAILABLE);
 
         itemJpaRepository.save(entity);

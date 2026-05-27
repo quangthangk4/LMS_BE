@@ -10,14 +10,17 @@ import jakarta.persistence.EnumType;
 import jakarta.persistence.Enumerated;
 import jakarta.persistence.Index;
 import jakarta.persistence.Table;
+import java.math.BigDecimal;
 import java.time.Instant;
 import java.time.LocalDate;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Getter;
 import lombok.Setter;
+import org.hibernate.annotations.DynamicUpdate;
 
 @Entity
+@DynamicUpdate
 @Table(name = "borrowing_transactions", indexes = {
     @Index(name = "idx_borrow_user_id", columnList = "userId"),
     @Index(name = "idx_borrow_item_id", columnList = "itemId"),
@@ -62,6 +65,38 @@ public class BorrowingTransactionEntity extends BaseEntity {
   @Column(nullable = false)
   @Builder.Default
   private Integer renewalCount = 0;
+
+  @Column(nullable = false, precision = 15, scale = 0)
+  @Builder.Default
+  private BigDecimal depositAmount = BigDecimal.ZERO;
+
+  @Column(nullable = false, length = 30)
+  @Builder.Default
+  private String depositStatus = "NOT_REQUIRED";
+
+  private Instant depositCollectedAt;
+
+  private Long depositCollectedByLibrarianId;
+
+  private Instant depositSettledAt;
+
+  private Long depositSettledByLibrarianId;
+
+  @Column(nullable = false, precision = 15, scale = 0)
+  @Builder.Default
+  private BigDecimal depositGrossFineAmount = BigDecimal.ZERO;
+
+  @Column(nullable = false, precision = 15, scale = 0)
+  @Builder.Default
+  private BigDecimal depositAppliedAmount = BigDecimal.ZERO;
+
+  @Column(nullable = false, precision = 15, scale = 0)
+  @Builder.Default
+  private BigDecimal depositRefundAmount = BigDecimal.ZERO;
+
+  @Column(nullable = false, precision = 15, scale = 0)
+  @Builder.Default
+  private BigDecimal depositAdditionalAmountDue = BigDecimal.ZERO;
 
   public BorrowingTransactionEntity() {
     // Default constructor for JPA

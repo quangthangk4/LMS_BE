@@ -1,6 +1,7 @@
 package com.library.circulation.application.transaction.impl;
 
 import com.library.catalog.domain.valueobject.ItemId;
+import com.library.circulation.application.deposit.BorrowDepositService;
 import com.library.circulation.application.policy.CirculationPolicy;
 import com.library.circulation.application.policy.CirculationPolicyService;
 import com.library.circulation.application.transaction.DirectBorrowUseCase;
@@ -12,6 +13,7 @@ import com.library.circulation.infrastructure.persistence.repository.BorrowingTr
 import com.library.shared.exception.AppException;
 import com.library.shared.exception.ErrorCode;
 import com.library.shared.kafka.KafkaTopics;
+import com.library.shared.kafka.event.LibraryEmailMessage;
 import com.library.shared.kafka.event.NotificationMessage;
 import com.library.shared.service.LibrarianNotificationService;
 import com.library.shared.util.TsIdGenerator;
@@ -59,6 +61,7 @@ public class DirectBorrowUseCaseImpl implements DirectBorrowUseCase {
     private final com.library.shared.port.UserInteractionPort userInteractionPort;
     private final CirculationPolicyService policyService;
     private final LibrarianNotificationService librarianNotificationService;
+    private final BorrowDepositService borrowDepositService;
 
     @Override
     @Transactional
@@ -132,23 +135,37 @@ public class DirectBorrowUseCaseImpl implements DirectBorrowUseCase {
         }
         BorrowingTransactionEntity entity = toEntity(transaction);
         transactionJpaRepository.save(entity);
+        transactionJpaRepository.flush();
+        BorrowDepositService.DepositSnapshot deposit = borrowDepositService.collectForBorrow(
+            entity.getId(), librarianId, policy.defaultDepositAmount());
 
         kafkaTemplate.send(KafkaTopics.NOTIFICATION_SEND, new NotificationMessage(
             userId,
             "PICKUP_CONFIRMED",
             "Sách đã được giao",
-            String.format("Bạn đã mượn '%s' tại thư viện. Hạn trả: %s.",
-                item.publicationTitle(), dueDate.format(DUE_DATE_FMT)),
+            String.format("Bạn đã mượn '%s' tại thư viện. Hạn trả: %s. Tiền cọc đã thu: %sđ.",
+                item.publicationTitle(), dueDate.format(DUE_DATE_FMT), deposit.depositAmount()),
             "/userpage/my-books?highlight=" + entity.getId(),
             entity.getId()
+        ));
+        kafkaTemplate.send(KafkaTopics.LIBRARY_EMAIL, new LibraryEmailMessage(
+            userId,
+            LibraryEmailMessage.PICKUP_CONFIRMED,
+            Map.of(
+                "publicationTitle", item.publicationTitle(),
+                "dueDate", dueDate.format(DUE_DATE_FMT),
+                "depositAmount", formatVnd(deposit.depositAmount()),
+                "actionPath", "/userpage/my-books?highlight=" + entity.getId()
+            )
         ));
 
         userInteractionPort.record(userId, item.publicationId(), com.library.shared.port.UserInteractionPort.TYPE_BORROW);
         librarianNotificationService.notifyAll(
             "LIB_CIRC_PICKUP",
             "Sinh viên đã nhận sách",
-            String.format("%s (%s) đã nhận '%s' - bản sao %s. Hạn trả: %s.",
-                studentName, studentCode, item.publicationTitle(), item.barcode(), dueDate.format(DUE_DATE_FMT)),
+            String.format("%s (%s) đã nhận '%s' - bản sao %s. Hạn trả: %s. Đã thu cọc: %sđ.",
+                studentName, studentCode, item.publicationTitle(), item.barcode(), dueDate.format(DUE_DATE_FMT),
+                deposit.depositAmount()),
             "/librarianpage/transactions?highlight=" + entity.getId(),
             entity.getId()
         );
@@ -165,6 +182,8 @@ public class DirectBorrowUseCaseImpl implements DirectBorrowUseCase {
             .location(item.location())
             .dueDate(dueDate)
             .status(entity.getStatus())
+            .depositAmount(deposit.depositAmount())
+            .depositStatus(deposit.depositStatus())
             .build();
     }
 
@@ -181,5 +200,9 @@ public class DirectBorrowUseCaseImpl implements DirectBorrowUseCase {
             .build();
         entity.setId(domain.getId().getValue());
         return entity;
+    }
+
+    private String formatVnd(java.math.BigDecimal amount) {
+        return (amount == null ? java.math.BigDecimal.ZERO : amount).toPlainString() + "đ";
     }
 }

@@ -1,5 +1,6 @@
 package com.library.circulation.application.fine.impl;
 
+import com.library.circulation.application.credit.ReaderCreditScoreService;
 import com.library.circulation.application.fine.PayFineUseCase;
 import com.library.circulation.domain.enums.PaymentStatus;
 import com.library.circulation.dto.response.FineResponse;
@@ -45,6 +46,7 @@ public class PayFineUseCaseImpl implements PayFineUseCase {
     private final KafkaTemplate<String, Object> kafkaTemplate;
     private final com.library.shared.service.AuditLogService auditLogService;
     private final LibrarianNotificationService librarianNotificationService;
+    private final ReaderCreditScoreService readerCreditScoreService;
 
     @Override
     @Transactional
@@ -72,6 +74,7 @@ public class PayFineUseCaseImpl implements PayFineUseCase {
         Long userId             = ((Number) jdbcTemplate.queryForObject(
             "SELECT t.user_id FROM borrowing_transactions t WHERE t.id = :txId",
             Map.of("txId", ((Number) row.get("transaction_id")).longValue()), Long.class)).longValue();
+        readerCreditScoreService.recordFinePayment(userId, 1);
         Map<String, Object> student = jdbcTemplate.queryForMap(
             "SELECT full_name, student_id FROM users WHERE id = :userId",
             Map.of("userId", userId)

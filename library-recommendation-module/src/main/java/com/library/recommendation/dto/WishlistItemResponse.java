@@ -10,5 +10,7 @@ public record WishlistItemResponse(
     String coverImageUrl,
     String authorNames,
     Integer publicationYear,
+    Integer totalItems,
+    Integer availableItems,
     Instant addedAt
 ) {}

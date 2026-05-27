@@ -11,6 +11,7 @@ public record CirculationPolicyResponse(
     Integer maxActiveBorrows,
     Integer maxActiveReservations,
     BigDecimal overdueFinePerDay,
+    BigDecimal defaultDepositAmount,
     Boolean blockBorrowWhenUnpaidFines,
     Long updatedByAdminId,
     String updatedByAdminName,

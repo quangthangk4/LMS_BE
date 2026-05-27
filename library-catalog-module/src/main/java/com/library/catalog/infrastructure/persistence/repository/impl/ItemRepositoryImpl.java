@@ -1,7 +1,9 @@
 package com.library.catalog.infrastructure.persistence.repository.impl;
 
 import com.library.catalog.domain.entities.ItemStatus;
+import com.library.catalog.domain.enums.BindingType;
 import com.library.catalog.domain.enums.ConditionItemEnum;
+import com.library.catalog.domain.enums.CopyType;
 import com.library.catalog.dto.request.item.ItemSearchRequest;
 import com.library.catalog.dto.response.item.ItemDetailResponse;
 import com.library.catalog.infrastructure.persistence.repository.ItemRepositoryCustom;
@@ -47,7 +49,8 @@ public class ItemRepositoryImpl implements ItemRepositoryCustom {
 
         String joins = "FROM items i JOIN publications p ON i.publication_id = p.id ";
 
-        String dataSQL = "SELECT i.id, i.barcode, i.branch, i.location, i.status, i.condition, p.title "
+        String dataSQL = "SELECT i.id, i.barcode, i.branch, i.location, i.status, i.condition, p.title, "
+                + "i.copy_type, i.binding_type, i.condition_note, i.acquired_date, i.acquisition_source "
                 + joins + where;
 
         String countSQL = "SELECT COUNT(*) " + joins + where;
@@ -106,6 +109,12 @@ public class ItemRepositoryImpl implements ItemRepositoryCustom {
                 .status(ItemStatus.valueOf((String) row[4]))
                 .condition(row[5] != null ? ConditionItemEnum.valueOf((String) row[5]) : null)
                 .publicationTitle((String) row[6])
+                .copyType(row[7] != null ? CopyType.valueOf((String) row[7]) : null)
+                .bindingType(row[8] != null ? BindingType.valueOf((String) row[8]) : null)
+                .conditionNote((String) row[9])
+                .acquiredDate(row[10] instanceof java.sql.Date date ? date.toLocalDate()
+                        : row[10] instanceof java.time.LocalDate localDate ? localDate : null)
+                .acquisitionSource((String) row[11])
                 .build();
     }
 }

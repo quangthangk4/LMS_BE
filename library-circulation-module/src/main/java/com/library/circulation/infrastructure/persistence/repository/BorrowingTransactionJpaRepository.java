@@ -88,7 +88,9 @@ public interface BorrowingTransactionJpaRepository extends
   @Query(value = """
           SELECT new com.library.circulation.dto.response.UserTransactionResponse(
               t.id, p.id, p.title, p.coverImageUrl, i.barcode, i.branch, i.location,
-              t.pickedUpDeadline, t.borrowedDate, t.dueDate, t.returnedDate, t.status, f.fineAmount,
+              t.pickedUpDeadline, t.borrowedDate, t.dueDate, t.returnedDate, t.status, COALESCE(SUM(f.fineAmount), 0),
+              t.depositGrossFineAmount, t.depositAmount, t.depositStatus, t.depositAppliedAmount,
+              t.depositRefundAmount, t.depositAdditionalAmountDue,
               CASE WHEN r.id IS NOT NULL THEN true ELSE false END
           )
           FROM BorrowingTransactionEntity t
@@ -97,6 +99,10 @@ public interface BorrowingTransactionJpaRepository extends
           LEFT JOIN FineEntity f ON t.id = f.transactionId
           LEFT JOIN RatingEntity r ON r.transactionId = t.id
           WHERE t.userId = :userId
+          GROUP BY t.id, p.id, p.title, p.coverImageUrl, i.barcode, i.branch, i.location,
+              t.pickedUpDeadline, t.borrowedDate, t.dueDate, t.returnedDate, t.status,
+              t.depositGrossFineAmount, t.depositAmount, t.depositStatus, t.depositAppliedAmount,
+              t.depositRefundAmount, t.depositAdditionalAmountDue, r.id
       """,
       countQuery = "SELECT COUNT(t) FROM BorrowingTransactionEntity t WHERE t.userId = :userId")
   Page<UserTransactionResponse> getMyTransactions(

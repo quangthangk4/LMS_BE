@@ -19,6 +19,7 @@ public class LookupForPickupUseCaseImpl implements LookupForPickupUseCase {
 
     private static final String BY_TRANSACTION_ID_SQL = """
         SELECT t.id AS transaction_id, t.user_id, t.item_id, t.picked_up_deadline, t.status,
+               t.deposit_amount, t.deposit_status,
                u.student_id, u.full_name,
                i.barcode, i.branch, i.location, i.publication_id,
                p.title AS publication_title
@@ -32,6 +33,7 @@ public class LookupForPickupUseCaseImpl implements LookupForPickupUseCase {
 
     private static final String BY_STUDENT_AND_BARCODE_SQL = """
         SELECT t.id AS transaction_id, t.user_id, t.item_id, t.picked_up_deadline, t.status,
+               t.deposit_amount, t.deposit_status,
                u.student_id, u.full_name,
                i.barcode, i.branch, i.location, i.publication_id,
                p.title AS publication_title
@@ -84,6 +86,8 @@ public class LookupForPickupUseCaseImpl implements LookupForPickupUseCase {
             .pickedUpDeadline(row.get("picked_up_deadline") != null
                 ? ((java.sql.Timestamp) row.get("picked_up_deadline")).toInstant() : null)
             .status(TransactionStatus.valueOf((String) row.get("status")))
+            .depositAmount((java.math.BigDecimal) row.get("deposit_amount"))
+            .depositStatus((String) row.get("deposit_status"))
             .build();
     }
 }

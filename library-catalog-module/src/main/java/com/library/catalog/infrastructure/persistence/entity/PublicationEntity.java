@@ -1,6 +1,7 @@
 package com.library.catalog.infrastructure.persistence.entity;
 
 import com.library.catalog.domain.enums.FacultyTarget;
+import com.library.catalog.domain.enums.PublicationFormat;
 import com.library.shared.entity.BaseEntity;
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
@@ -43,6 +44,13 @@ public class PublicationEntity extends BaseEntity {
     private String fileUrl;
     private Integer publicationYear;
     private Integer edition;
+
+    @Enumerated(EnumType.STRING)
+    @Column(name = "publication_format", length = 40)
+    private PublicationFormat publicationFormat;
+
+    @Column(name = "edition_note", length = 255)
+    private String editionNote;
 
     @Column(columnDefinition = "TEXT")
     private String coverImageUrl;
