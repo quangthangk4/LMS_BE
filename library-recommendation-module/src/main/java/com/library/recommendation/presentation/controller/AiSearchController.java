@@ -3,6 +3,7 @@ package com.library.recommendation.presentation.controller;
 import com.library.recommendation.application.ai.SemanticSearchJobService;
 import com.library.recommendation.infrastructure.ai.AiGatewayService;
 import com.library.shared.dto.ApiResponseApp;
+import jakarta.servlet.http.HttpServletRequest;
 import java.util.List;
 import lombok.RequiredArgsConstructor;
 import org.springframework.web.bind.annotation.GetMapping;
@@ -32,8 +33,12 @@ public class AiSearchController {
 
     @PostMapping("/semantic-search/jobs")
     public ApiResponseApp<SemanticSearchJobService.SemanticSearchJob> submitSemanticSearchJob(
-        @RequestBody SemanticSearchRequest request) {
-        return ApiResponseApp.success(semanticSearchJobService.submit(request.queryText(), request.limit()));
+        @RequestBody SemanticSearchRequest request,
+        HttpServletRequest httpRequest) {
+        return ApiResponseApp.success(semanticSearchJobService.submit(
+            request.queryText(),
+            request.limit(),
+            clientKey(httpRequest)));
     }
 
     @GetMapping("/semantic-search/jobs/{jobId}")
@@ -50,5 +55,17 @@ public class AiSearchController {
     }
 
     public record SemanticSearchResponse(List<String> publicationIds) {
+    }
+
+    private String clientKey(HttpServletRequest request) {
+        String forwardedFor = request.getHeader("X-Forwarded-For");
+        if (forwardedFor != null && !forwardedFor.isBlank()) {
+            return forwardedFor.split(",")[0].trim();
+        }
+        String realIp = request.getHeader("X-Real-IP");
+        if (realIp != null && !realIp.isBlank()) {
+            return realIp.trim();
+        }
+        return request.getRemoteAddr();
     }
 }

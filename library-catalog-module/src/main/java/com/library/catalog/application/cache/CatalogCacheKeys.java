@@ -33,6 +33,14 @@ public final class CatalogCacheKeys {
     return "limit=" + limit + "|lang=" + MetadataLanguage.normalize(uiLanguage);
   }
 
+  public static String language(String uiLanguage) {
+    return "lang=" + MetadataLanguage.normalize(uiLanguage);
+  }
+
+  public static String keyword(String keyword) {
+    return "kw=" + normalize(keyword);
+  }
+
   public static String detail(Long publicationId, String uiLanguage) {
     return "id=" + publicationId + "|lang=" + MetadataLanguage.normalize(uiLanguage);
   }

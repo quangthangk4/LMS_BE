@@ -18,7 +18,12 @@ public final class CatalogCacheEviction {
       @CacheEvict(cacheNames = CatalogCacheNames.NEWEST_PUBLICATIONS, allEntries = true),
       @CacheEvict(cacheNames = CatalogCacheNames.MOST_BORROWED_PUBLICATIONS, allEntries = true),
       @CacheEvict(cacheNames = CatalogCacheNames.PUBLIC_LIBRARY_STATS, allEntries = true),
-      @CacheEvict(cacheNames = CatalogCacheNames.PUBLIC_TESTIMONIALS, allEntries = true)
+      @CacheEvict(cacheNames = CatalogCacheNames.PUBLIC_TESTIMONIALS, allEntries = true),
+      @CacheEvict(cacheNames = CatalogCacheNames.CATEGORY_OVERVIEWS, allEntries = true),
+      @CacheEvict(cacheNames = CatalogCacheNames.AUTHOR_SEARCH, allEntries = true),
+      @CacheEvict(cacheNames = CatalogCacheNames.CATEGORY_SEARCH, allEntries = true),
+      @CacheEvict(cacheNames = CatalogCacheNames.PUBLISHER_SEARCH, allEntries = true),
+      @CacheEvict(cacheNames = CatalogCacheNames.TAG_SEARCH, allEntries = true)
   })
   @Target(ElementType.METHOD)
   @Retention(RetentionPolicy.RUNTIME)

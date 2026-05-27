@@ -1,6 +1,7 @@
 package com.library.catalog.application.impl;
 
 import com.library.catalog.application.UploadPublicationCoverUseCase;
+import com.library.catalog.application.cache.CatalogCacheEviction.EvictCatalogReadCaches;
 import com.library.catalog.infrastructure.persistence.entity.PublicationEntity;
 import com.library.catalog.infrastructure.persistence.repository.PublicationJpaRepository;
 import com.library.shared.exception.AppException;
@@ -27,6 +28,7 @@ public class UploadPublicationCoverUseCaseImpl implements UploadPublicationCover
 
     @Override
     @Transactional
+    @EvictCatalogReadCaches
     public String execute(Long publicationId, MultipartFile file) {
         // 1. Validate
         if (file == null || file.isEmpty()) {

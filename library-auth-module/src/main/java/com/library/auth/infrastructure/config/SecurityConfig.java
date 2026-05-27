@@ -56,7 +56,11 @@ public class SecurityConfig {
 
   public static final String[] ACTUATOR_ENDPOINTS = {
       "/actuator/health",
+      "/actuator/health/**",
       "/actuator/info",
+      "/actuator/metrics",
+      "/actuator/metrics/**",
+      "/actuator/prometheus",
   };
 
   public static final String[] WEBSOCKET_ENDPOINTS = {

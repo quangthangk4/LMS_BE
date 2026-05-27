@@ -135,26 +135,26 @@ public class SearchPublicationsUseCaseImpl implements SearchPublicationsUseCase 
             String kwNormalized = "%" + normalizeSearchKeyword(keyword) + "%";
             if (Boolean.TRUE.equals(req.getTitleOnly())) {
                 sb.append("""
-                AND (LOWER(unaccent(p.title)) LIKE :kwNormalized
-                  OR LOWER(unaccent(COALESCE(NULLIF(pt.title, ''), p.title))) LIKE :kwNormalized
-                  OR LOWER(unaccent(COALESCE(NULLIF(pt.subtitle, ''), p.subtitle))) LIKE :kwNormalized
+                AND (LOWER(public.immutable_unaccent(p.title)) LIKE :kwNormalized
+                  OR LOWER(public.immutable_unaccent(COALESCE(NULLIF(pt.title, ''), p.title))) LIKE :kwNormalized
+                  OR LOWER(public.immutable_unaccent(COALESCE(NULLIF(pt.subtitle, ''), p.subtitle))) LIKE :kwNormalized
                   OR LOWER(p.title) LIKE :kw
                   OR LOWER(COALESCE(NULLIF(pt.title, ''), p.title)) LIKE :kw
                   OR LOWER(COALESCE(NULLIF(pt.subtitle, ''), p.subtitle)) LIKE :kw
                   OR EXISTS (SELECT 1
                              FROM publication_translations pt_all
                              WHERE pt_all.publication_id = p.id
-                               AND (LOWER(unaccent(COALESCE(pt_all.title, ''))) LIKE :kwNormalized
-                                 OR LOWER(unaccent(COALESCE(pt_all.subtitle, ''))) LIKE :kwNormalized
+                               AND (LOWER(public.immutable_unaccent(COALESCE(pt_all.title, ''))) LIKE :kwNormalized
+                                 OR LOWER(public.immutable_unaccent(COALESCE(pt_all.subtitle, ''))) LIKE :kwNormalized
                                  OR LOWER(COALESCE(pt_all.title, '')) LIKE :kw
                                  OR LOWER(COALESCE(pt_all.subtitle, '')) LIKE :kw)))
                 """);
             } else {
                 sb.append("""
-                AND (LOWER(unaccent(p.title)) LIKE :kwNormalized
-                  OR LOWER(unaccent(COALESCE(NULLIF(pt.title, ''), p.title))) LIKE :kwNormalized
-                  OR LOWER(unaccent(COALESCE(NULLIF(pt.subtitle, ''), p.subtitle))) LIKE :kwNormalized
-                  OR LOWER(unaccent(COALESCE(NULLIF(pt.description, ''), p.description))) LIKE :kwNormalized
+                AND (LOWER(public.immutable_unaccent(p.title)) LIKE :kwNormalized
+                  OR LOWER(public.immutable_unaccent(COALESCE(NULLIF(pt.title, ''), p.title))) LIKE :kwNormalized
+                  OR LOWER(public.immutable_unaccent(COALESCE(NULLIF(pt.subtitle, ''), p.subtitle))) LIKE :kwNormalized
+                  OR LOWER(public.immutable_unaccent(COALESCE(NULLIF(pt.description, ''), p.description))) LIKE :kwNormalized
                   OR LOWER(p.title) LIKE :kw
                   OR LOWER(COALESCE(NULLIF(pt.title, ''), p.title)) LIKE :kw
                   OR LOWER(COALESCE(NULLIF(pt.subtitle, ''), p.subtitle)) LIKE :kw
@@ -162,10 +162,10 @@ public class SearchPublicationsUseCaseImpl implements SearchPublicationsUseCase 
                   OR EXISTS (SELECT 1
                              FROM publication_translations pt_all
                              WHERE pt_all.publication_id = p.id
-                               AND (LOWER(unaccent(COALESCE(pt_all.title, ''))) LIKE :kwNormalized
-                                 OR LOWER(unaccent(COALESCE(pt_all.subtitle, ''))) LIKE :kwNormalized
-                                 OR LOWER(unaccent(COALESCE(pt_all.description, ''))) LIKE :kwNormalized
-                                 OR LOWER(unaccent(COALESCE(pt_all.ai_summary, ''))) LIKE :kwNormalized
+                               AND (LOWER(public.immutable_unaccent(COALESCE(pt_all.title, ''))) LIKE :kwNormalized
+                                 OR LOWER(public.immutable_unaccent(COALESCE(pt_all.subtitle, ''))) LIKE :kwNormalized
+                                 OR LOWER(public.immutable_unaccent(COALESCE(pt_all.description, ''))) LIKE :kwNormalized
+                                 OR LOWER(public.immutable_unaccent(COALESCE(pt_all.ai_summary, ''))) LIKE :kwNormalized
                                  OR LOWER(COALESCE(pt_all.title, '')) LIKE :kw
                                  OR LOWER(COALESCE(pt_all.subtitle, '')) LIKE :kw
                                  OR LOWER(COALESCE(pt_all.description, '')) LIKE :kw
@@ -173,14 +173,14 @@ public class SearchPublicationsUseCaseImpl implements SearchPublicationsUseCase 
                   OR p.isbn = :kwExact
                   OR EXISTS (SELECT 1 FROM publication_authors pa JOIN authors a ON a.id = pa.author_id
                              WHERE pa.publication_id = p.id
-                               AND (LOWER(unaccent(a.name)) LIKE :kwNormalized OR LOWER(a.name) LIKE :kw))
+                               AND (LOWER(public.immutable_unaccent(a.name)) LIKE :kwNormalized OR LOWER(a.name) LIKE :kw))
                   OR EXISTS (SELECT 1
                              FROM publication_tags ptag
                              JOIN tags t ON t.id = ptag.tag_id
                              LEFT JOIN tag_translations tt_all ON tt_all.tag_id = t.id
                              WHERE ptag.publication_id = p.id
-                               AND (LOWER(unaccent(t.name)) LIKE :kwNormalized
-                                 OR LOWER(unaccent(COALESCE(tt_all.name, ''))) LIKE :kwNormalized
+                               AND (LOWER(public.immutable_unaccent(t.name)) LIKE :kwNormalized
+                                 OR LOWER(public.immutable_unaccent(COALESCE(tt_all.name, ''))) LIKE :kwNormalized
                                  OR LOWER(t.name) LIKE :kw
                                  OR LOWER(COALESCE(tt_all.name, '')) LIKE :kw))
                   OR EXISTS (SELECT 1
@@ -188,8 +188,8 @@ public class SearchPublicationsUseCaseImpl implements SearchPublicationsUseCase 
                              JOIN categories c ON c.id = pc.category_id
                              LEFT JOIN category_translations ct_all ON ct_all.category_id = c.id
                              WHERE pc.publication_id = p.id
-                               AND (LOWER(unaccent(c.name)) LIKE :kwNormalized
-                                 OR LOWER(unaccent(COALESCE(ct_all.name, ''))) LIKE :kwNormalized
+                               AND (LOWER(public.immutable_unaccent(c.name)) LIKE :kwNormalized
+                                 OR LOWER(public.immutable_unaccent(COALESCE(ct_all.name, ''))) LIKE :kwNormalized
                                  OR LOWER(c.name) LIKE :kw
                                  OR LOWER(COALESCE(ct_all.name, '')) LIKE :kw)))
                 """);
@@ -245,15 +245,15 @@ public class SearchPublicationsUseCaseImpl implements SearchPublicationsUseCase 
             relevancePrefix = """
                 CASE
                     WHEN LOWER(COALESCE(NULLIF(pt.title, ''), p.title)) LIKE :kw THEN 0
-                    WHEN LOWER(unaccent(COALESCE(NULLIF(pt.title, ''), p.title))) LIKE :kwNormalized THEN 0
+                    WHEN LOWER(public.immutable_unaccent(COALESCE(NULLIF(pt.title, ''), p.title))) LIKE :kwNormalized THEN 0
                     WHEN LOWER(COALESCE(NULLIF(pt.subtitle, ''), p.subtitle)) LIKE :kw THEN 1
-                    WHEN LOWER(unaccent(COALESCE(NULLIF(pt.subtitle, ''), p.subtitle))) LIKE :kwNormalized THEN 1
+                    WHEN LOWER(public.immutable_unaccent(COALESCE(NULLIF(pt.subtitle, ''), p.subtitle))) LIKE :kwNormalized THEN 1
                     WHEN EXISTS (
                         SELECT 1
                         FROM publication_translations pt_all
                         WHERE pt_all.publication_id = p.id
-                          AND (LOWER(unaccent(COALESCE(pt_all.title, ''))) LIKE :kwNormalized
-                            OR LOWER(unaccent(COALESCE(pt_all.subtitle, ''))) LIKE :kwNormalized
+                          AND (LOWER(public.immutable_unaccent(COALESCE(pt_all.title, ''))) LIKE :kwNormalized
+                            OR LOWER(public.immutable_unaccent(COALESCE(pt_all.subtitle, ''))) LIKE :kwNormalized
                             OR LOWER(COALESCE(pt_all.title, '')) LIKE :kw
                             OR LOWER(COALESCE(pt_all.subtitle, '')) LIKE :kw)
                     ) THEN 1
@@ -263,8 +263,8 @@ public class SearchPublicationsUseCaseImpl implements SearchPublicationsUseCase 
                         JOIN tags t ON t.id = ptag.tag_id
                         LEFT JOIN tag_translations tt_all ON tt_all.tag_id = t.id
                         WHERE ptag.publication_id = p.id
-                          AND (LOWER(unaccent(t.name)) = :kwExactNormalized
-                            OR LOWER(unaccent(COALESCE(tt_all.name, ''))) = :kwExactNormalized
+                          AND (LOWER(public.immutable_unaccent(t.name)) = :kwExactNormalized
+                            OR LOWER(public.immutable_unaccent(COALESCE(tt_all.name, ''))) = :kwExactNormalized
                             OR LOWER(t.name) = :kwExactLower
                             OR LOWER(COALESCE(tt_all.name, '')) = :kwExactLower)
                     ) THEN 2
@@ -274,8 +274,8 @@ public class SearchPublicationsUseCaseImpl implements SearchPublicationsUseCase 
                         JOIN tags t ON t.id = ptag.tag_id
                         LEFT JOIN tag_translations tt_all ON tt_all.tag_id = t.id
                         WHERE ptag.publication_id = p.id
-                          AND (LOWER(unaccent(t.name)) LIKE :kwNormalized
-                            OR LOWER(unaccent(COALESCE(tt_all.name, ''))) LIKE :kwNormalized
+                          AND (LOWER(public.immutable_unaccent(t.name)) LIKE :kwNormalized
+                            OR LOWER(public.immutable_unaccent(COALESCE(tt_all.name, ''))) LIKE :kwNormalized
                             OR LOWER(t.name) LIKE :kw
                             OR LOWER(COALESCE(tt_all.name, '')) LIKE :kw)
                     ) THEN 3

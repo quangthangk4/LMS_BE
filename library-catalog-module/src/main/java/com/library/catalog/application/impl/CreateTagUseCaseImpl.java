@@ -1,6 +1,7 @@
 package com.library.catalog.application.impl;
 
 import com.library.catalog.application.CreateTagUseCase;
+import com.library.catalog.application.cache.CatalogCacheEviction.EvictCatalogReadCaches;
 import com.library.catalog.infrastructure.persistence.entity.TagEntity;
 import com.library.catalog.infrastructure.persistence.repository.TagJpaRepository;
 import com.library.shared.util.TsIdGenerator;
@@ -16,6 +17,7 @@ public class CreateTagUseCaseImpl implements CreateTagUseCase {
 
     @Override
     @Transactional
+    @EvictCatalogReadCaches
     public void execute(String name) {
         if (name == null || name.isBlank()) {
             throw new IllegalArgumentException("Tag name cannot be empty");
