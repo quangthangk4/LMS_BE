@@ -1,7 +1,6 @@
 package com.library.catalog.application.impl;
 
 import com.library.catalog.application.CreateAuthorUseCase;
-import com.library.catalog.application.cache.CatalogCacheEviction.EvictCatalogReadCaches;
 import com.library.catalog.infrastructure.persistence.entity.AuthorEntity;
 import com.library.catalog.infrastructure.persistence.repository.AuthorJpaRepository;
 import com.library.shared.util.TsIdGenerator;
@@ -17,7 +16,6 @@ public class CreateAuthorUseCaseImpl implements CreateAuthorUseCase {
 
     @Override
     @Transactional
-    @EvictCatalogReadCaches
     public Long execute(String name) {
         if (name == null || name.isBlank()) {
             throw new IllegalArgumentException("Author name cannot be empty");

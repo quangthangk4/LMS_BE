@@ -1,7 +1,6 @@
 package com.library.catalog.application.impl;
 
 import com.library.catalog.application.CreateCategoryUseCase;
-import com.library.catalog.application.cache.CatalogCacheEviction.EvictCatalogReadCaches;
 import com.library.catalog.infrastructure.persistence.entity.CategoryEntity;
 import com.library.catalog.infrastructure.persistence.repository.CategoryJpaRepository;
 import com.library.shared.util.TsIdGenerator;
@@ -17,7 +16,6 @@ public class CreateCategoryUseCaseImpl implements CreateCategoryUseCase {
 
     @Override
     @Transactional
-    @EvictCatalogReadCaches
     public Long execute(String name) {
         if (name == null || name.isBlank()) {
             throw new IllegalArgumentException("Category name cannot be empty");

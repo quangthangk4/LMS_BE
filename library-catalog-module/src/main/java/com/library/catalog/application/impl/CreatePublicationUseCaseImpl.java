@@ -1,7 +1,6 @@
 package com.library.catalog.application.impl;
 
 import com.library.catalog.application.CreatePublicationUseCase;
-import com.library.catalog.application.cache.CatalogCacheEviction.EvictCatalogReadCaches;
 import com.library.catalog.domain.enums.PublicationFormat;
 import com.library.catalog.domain.valueobject.ISBN;
 import com.library.catalog.dto.request.publication.CreatePublicationRequest;
@@ -23,7 +22,6 @@ public class CreatePublicationUseCaseImpl implements CreatePublicationUseCase {
     private final LibrarianNotificationService librarianNotificationService;
 
     @Override
-    @EvictCatalogReadCaches
     @Transactional
     public Long execute(CreatePublicationRequest request, Long librarianId) {
         // 1. Create and Save Publication Entity

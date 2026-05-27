@@ -1,13 +1,11 @@
 package com.library.catalog.application.impl;
 
 import com.library.catalog.application.GetPublicLibraryStatsUseCase;
-import com.library.catalog.application.cache.CatalogCacheNames;
 import com.library.catalog.dto.response.publication.PublicLibraryStatsResponse;
 import java.math.BigDecimal;
 import java.math.RoundingMode;
 import java.util.Map;
 import lombok.RequiredArgsConstructor;
-import org.springframework.cache.annotation.Cacheable;
 import org.springframework.jdbc.core.namedparam.NamedParameterJdbcTemplate;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -31,7 +29,6 @@ public class GetPublicLibraryStatsUseCaseImpl implements GetPublicLibraryStatsUs
       """;
 
   @Override
-  @Cacheable(cacheNames = CatalogCacheNames.PUBLIC_LIBRARY_STATS, key = "'global'")
   @Transactional(readOnly = true)
   public PublicLibraryStatsResponse execute() {
     Map<String, Object> row = jdbcTemplate.queryForMap(STATS_SQL, Map.of());

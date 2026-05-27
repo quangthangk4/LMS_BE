@@ -1,7 +1,6 @@
 package com.library.catalog.application.impl;
 
 import com.library.catalog.application.GetNewestPublicationsUseCase;
-import com.library.catalog.application.cache.CatalogCacheNames;
 import com.library.catalog.application.i18n.MetadataLanguage;
 import com.library.catalog.dto.projection.AuthorNameProjection;
 import com.library.catalog.dto.projection.NewestPublicationProjection;
@@ -11,7 +10,6 @@ import java.util.List;
 import java.util.Map;
 import java.util.stream.Collectors;
 import lombok.RequiredArgsConstructor;
-import org.springframework.cache.annotation.Cacheable;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
 import org.springframework.jdbc.core.namedparam.MapSqlParameterSource;
@@ -26,10 +24,6 @@ public class GetNewestPublicationsUseCaseImpl implements GetNewestPublicationsUs
   private final NamedParameterJdbcTemplate jdbc;
 
   @Override
-  @Cacheable(
-      cacheNames = CatalogCacheNames.NEWEST_PUBLICATIONS,
-      key = "T(com.library.catalog.application.cache.CatalogCacheKeys).localizedLimit(#limit, #uiLanguage)"
-  )
   public List<NewestPublicationsResponse> execute(int limit, String uiLanguage) {
     Pageable pageable = PageRequest.of(0, limit);
     List<NewestPublicationProjection> projections = publicationJpaRepository.findNewestPublications(

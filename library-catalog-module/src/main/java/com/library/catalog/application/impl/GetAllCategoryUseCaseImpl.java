@@ -1,12 +1,10 @@
 package com.library.catalog.application.impl;
 
 import com.library.catalog.application.GetAllCategoryUseCase;
-import com.library.catalog.application.cache.CatalogCacheNames;
 import com.library.catalog.application.i18n.MetadataLanguage;
 import com.library.catalog.dto.response.category.CategoryOverviewResponse;
 import java.util.List;
 import lombok.RequiredArgsConstructor;
-import org.springframework.cache.annotation.Cacheable;
 import org.springframework.jdbc.core.namedparam.MapSqlParameterSource;
 import org.springframework.jdbc.core.namedparam.NamedParameterJdbcTemplate;
 import org.springframework.stereotype.Service;
@@ -37,10 +35,6 @@ public class GetAllCategoryUseCaseImpl implements GetAllCategoryUseCase {
 
     @Override
     @Transactional(readOnly = true)
-    @Cacheable(
-        cacheNames = CatalogCacheNames.CATEGORY_OVERVIEWS,
-        key = "T(com.library.catalog.application.cache.CatalogCacheKeys).language(#uiLanguage)"
-    )
     public List<CategoryOverviewResponse> execute(String uiLanguage) {
         MapSqlParameterSource params = new MapSqlParameterSource()
             .addValue("uiLanguage", MetadataLanguage.normalize(uiLanguage));

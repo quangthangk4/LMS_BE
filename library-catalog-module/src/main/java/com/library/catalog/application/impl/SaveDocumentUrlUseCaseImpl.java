@@ -1,7 +1,6 @@
 package com.library.catalog.application.impl;
 
 import com.library.catalog.application.SaveDocumentUrlUseCase;
-import com.library.catalog.application.cache.CatalogCacheEviction.EvictCatalogReadCaches;
 import com.library.catalog.infrastructure.persistence.entity.PublicationEntity;
 import com.library.catalog.infrastructure.persistence.repository.PublicationJpaRepository;
 import com.library.shared.exception.AppException;
@@ -26,7 +25,6 @@ public class SaveDocumentUrlUseCaseImpl implements SaveDocumentUrlUseCase {
 
     @Override
     @Transactional
-    @EvictCatalogReadCaches
     public String execute(Long publicationId, String s3Key) {
         PublicationEntity publication = publicationRepository.findById(publicationId)
             .orElseThrow(() -> new AppException(ErrorCode.PUBLICATION_NOT_FOUND));
@@ -44,7 +42,6 @@ public class SaveDocumentUrlUseCaseImpl implements SaveDocumentUrlUseCase {
 
     @Override
     @Transactional
-    @EvictCatalogReadCaches
     public void reprocessExistingDocument(Long publicationId) {
         PublicationEntity publication = publicationRepository.findById(publicationId)
             .orElseThrow(() -> new AppException(ErrorCode.PUBLICATION_NOT_FOUND));
@@ -59,7 +56,6 @@ public class SaveDocumentUrlUseCaseImpl implements SaveDocumentUrlUseCase {
 
     @Override
     @Transactional
-    @EvictCatalogReadCaches
     public void reprocessExistingDocumentVectors(Long publicationId) {
         PublicationEntity publication = publicationRepository.findById(publicationId)
             .orElseThrow(() -> new AppException(ErrorCode.PUBLICATION_NOT_FOUND));
@@ -74,7 +70,6 @@ public class SaveDocumentUrlUseCaseImpl implements SaveDocumentUrlUseCase {
 
     @Override
     @Transactional
-    @EvictCatalogReadCaches
     public void generateExistingDocumentMetadata(Long publicationId) {
         PublicationEntity publication = publicationRepository.findById(publicationId)
             .orElseThrow(() -> new AppException(ErrorCode.PUBLICATION_NOT_FOUND));

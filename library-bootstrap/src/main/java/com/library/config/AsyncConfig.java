@@ -35,17 +35,4 @@ public class AsyncConfig {
         executor.initialize();
         return executor;
     }
-
-    @Bean("aiSearchExecutor")
-    public Executor aiSearchExecutor() {
-        ThreadPoolTaskExecutor executor = new ThreadPoolTaskExecutor();
-        executor.setCorePoolSize(2);
-        executor.setMaxPoolSize(4);
-        executor.setQueueCapacity(200);
-        executor.setKeepAliveSeconds(60);
-        executor.setThreadNamePrefix("ai-search-");
-        executor.setRejectedExecutionHandler(new ThreadPoolExecutor.AbortPolicy());
-        executor.initialize();
-        return executor;
-    }
 }

@@ -1,7 +1,6 @@
 package com.library.catalog.application.impl;
 
 import com.library.catalog.application.SearchPublicationsUseCase;
-import com.library.catalog.application.cache.CatalogCacheNames;
 import com.library.catalog.application.i18n.MetadataLanguage;
 import com.library.catalog.dto.request.publication.PublicSearchRequest;
 import com.library.catalog.dto.response.publication.PublicSearchResult;
@@ -10,19 +9,15 @@ import java.text.Normalizer;
 import java.util.List;
 import java.util.Locale;
 import lombok.RequiredArgsConstructor;
-import lombok.extern.slf4j.Slf4j;
-import org.springframework.cache.annotation.Cacheable;
 import org.springframework.jdbc.core.namedparam.MapSqlParameterSource;
 import org.springframework.jdbc.core.namedparam.NamedParameterJdbcTemplate;
 import org.springframework.stereotype.Service;
 
 @Service
 @RequiredArgsConstructor
-@Slf4j
 public class SearchPublicationsUseCaseImpl implements SearchPublicationsUseCase {
 
     private final NamedParameterJdbcTemplate jdbc;
-    private static final long SLOW_QUERY_THRESHOLD_MS = 1_000L;
 
     private static final String SELECT_CLAUSE = """
         SELECT
@@ -69,12 +64,7 @@ public class SearchPublicationsUseCaseImpl implements SearchPublicationsUseCase 
         """;
 
     @Override
-    @Cacheable(
-        cacheNames = CatalogCacheNames.PUBLICATION_SEARCH,
-        key = "T(com.library.catalog.application.cache.CatalogCacheKeys).publicSearch(#req, #uiLanguage)"
-    )
     public PageResponse<PublicSearchResult> execute(PublicSearchRequest req, String uiLanguage) {
-        long startedAt = System.nanoTime();
         MapSqlParameterSource params = new MapSqlParameterSource();
         params.addValue("uiLanguage", MetadataLanguage.normalize(uiLanguage));
         String where = buildWhere(req, params);
@@ -87,7 +77,6 @@ public class SearchPublicationsUseCaseImpl implements SearchPublicationsUseCase 
         String dataSql = SELECT_CLAUSE + where + " ORDER BY " + orderBy + " LIMIT :size OFFSET :offset";
         String countSql = COUNT_CLAUSE + where;
 
-        long dataStartedAt = System.nanoTime();
         List<PublicSearchResult> content = jdbc.query(dataSql, params, (rs, row) ->
             new PublicSearchResult(
                 rs.getLong("publication_id"),
@@ -106,14 +95,9 @@ public class SearchPublicationsUseCaseImpl implements SearchPublicationsUseCase 
                 rs.getLong("view_count")
             )
         );
-        long dataMs = elapsedMs(dataStartedAt);
 
-        long countStartedAt = System.nanoTime();
         long total = jdbc.queryForObject(countSql, params, Long.class);
-        long countMs = elapsedMs(countStartedAt);
         int totalPages = size > 0 ? (int) Math.ceil((double) total / size) : 0;
-
-        profileSearch(req, page, size, content.size(), total, dataMs, countMs, elapsedMs(startedAt));
 
         return PageResponse.<PublicSearchResult>builder()
             .content(content)
@@ -135,26 +119,26 @@ public class SearchPublicationsUseCaseImpl implements SearchPublicationsUseCase 
             String kwNormalized = "%" + normalizeSearchKeyword(keyword) + "%";
             if (Boolean.TRUE.equals(req.getTitleOnly())) {
                 sb.append("""
-                AND (LOWER(public.immutable_unaccent(p.title)) LIKE :kwNormalized
-                  OR LOWER(public.immutable_unaccent(COALESCE(NULLIF(pt.title, ''), p.title))) LIKE :kwNormalized
-                  OR LOWER(public.immutable_unaccent(COALESCE(NULLIF(pt.subtitle, ''), p.subtitle))) LIKE :kwNormalized
+                AND (LOWER(unaccent(p.title)) LIKE :kwNormalized
+                  OR LOWER(unaccent(COALESCE(NULLIF(pt.title, ''), p.title))) LIKE :kwNormalized
+                  OR LOWER(unaccent(COALESCE(NULLIF(pt.subtitle, ''), p.subtitle))) LIKE :kwNormalized
                   OR LOWER(p.title) LIKE :kw
                   OR LOWER(COALESCE(NULLIF(pt.title, ''), p.title)) LIKE :kw
                   OR LOWER(COALESCE(NULLIF(pt.subtitle, ''), p.subtitle)) LIKE :kw
                   OR EXISTS (SELECT 1
                              FROM publication_translations pt_all
                              WHERE pt_all.publication_id = p.id
-                               AND (LOWER(public.immutable_unaccent(COALESCE(pt_all.title, ''))) LIKE :kwNormalized
-                                 OR LOWER(public.immutable_unaccent(COALESCE(pt_all.subtitle, ''))) LIKE :kwNormalized
+                               AND (LOWER(unaccent(COALESCE(pt_all.title, ''))) LIKE :kwNormalized
+                                 OR LOWER(unaccent(COALESCE(pt_all.subtitle, ''))) LIKE :kwNormalized
                                  OR LOWER(COALESCE(pt_all.title, '')) LIKE :kw
                                  OR LOWER(COALESCE(pt_all.subtitle, '')) LIKE :kw)))
                 """);
             } else {
                 sb.append("""
-                AND (LOWER(public.immutable_unaccent(p.title)) LIKE :kwNormalized
-                  OR LOWER(public.immutable_unaccent(COALESCE(NULLIF(pt.title, ''), p.title))) LIKE :kwNormalized
-                  OR LOWER(public.immutable_unaccent(COALESCE(NULLIF(pt.subtitle, ''), p.subtitle))) LIKE :kwNormalized
-                  OR LOWER(public.immutable_unaccent(COALESCE(NULLIF(pt.description, ''), p.description))) LIKE :kwNormalized
+                AND (LOWER(unaccent(p.title)) LIKE :kwNormalized
+                  OR LOWER(unaccent(COALESCE(NULLIF(pt.title, ''), p.title))) LIKE :kwNormalized
+                  OR LOWER(unaccent(COALESCE(NULLIF(pt.subtitle, ''), p.subtitle))) LIKE :kwNormalized
+                  OR LOWER(unaccent(COALESCE(NULLIF(pt.description, ''), p.description))) LIKE :kwNormalized
                   OR LOWER(p.title) LIKE :kw
                   OR LOWER(COALESCE(NULLIF(pt.title, ''), p.title)) LIKE :kw
                   OR LOWER(COALESCE(NULLIF(pt.subtitle, ''), p.subtitle)) LIKE :kw
@@ -162,10 +146,10 @@ public class SearchPublicationsUseCaseImpl implements SearchPublicationsUseCase 
                   OR EXISTS (SELECT 1
                              FROM publication_translations pt_all
                              WHERE pt_all.publication_id = p.id
-                               AND (LOWER(public.immutable_unaccent(COALESCE(pt_all.title, ''))) LIKE :kwNormalized
-                                 OR LOWER(public.immutable_unaccent(COALESCE(pt_all.subtitle, ''))) LIKE :kwNormalized
-                                 OR LOWER(public.immutable_unaccent(COALESCE(pt_all.description, ''))) LIKE :kwNormalized
-                                 OR LOWER(public.immutable_unaccent(COALESCE(pt_all.ai_summary, ''))) LIKE :kwNormalized
+                               AND (LOWER(unaccent(COALESCE(pt_all.title, ''))) LIKE :kwNormalized
+                                 OR LOWER(unaccent(COALESCE(pt_all.subtitle, ''))) LIKE :kwNormalized
+                                 OR LOWER(unaccent(COALESCE(pt_all.description, ''))) LIKE :kwNormalized
+                                 OR LOWER(unaccent(COALESCE(pt_all.ai_summary, ''))) LIKE :kwNormalized
                                  OR LOWER(COALESCE(pt_all.title, '')) LIKE :kw
                                  OR LOWER(COALESCE(pt_all.subtitle, '')) LIKE :kw
                                  OR LOWER(COALESCE(pt_all.description, '')) LIKE :kw
@@ -173,14 +157,14 @@ public class SearchPublicationsUseCaseImpl implements SearchPublicationsUseCase 
                   OR p.isbn = :kwExact
                   OR EXISTS (SELECT 1 FROM publication_authors pa JOIN authors a ON a.id = pa.author_id
                              WHERE pa.publication_id = p.id
-                               AND (LOWER(public.immutable_unaccent(a.name)) LIKE :kwNormalized OR LOWER(a.name) LIKE :kw))
+                               AND (LOWER(unaccent(a.name)) LIKE :kwNormalized OR LOWER(a.name) LIKE :kw))
                   OR EXISTS (SELECT 1
                              FROM publication_tags ptag
                              JOIN tags t ON t.id = ptag.tag_id
                              LEFT JOIN tag_translations tt_all ON tt_all.tag_id = t.id
                              WHERE ptag.publication_id = p.id
-                               AND (LOWER(public.immutable_unaccent(t.name)) LIKE :kwNormalized
-                                 OR LOWER(public.immutable_unaccent(COALESCE(tt_all.name, ''))) LIKE :kwNormalized
+                               AND (LOWER(unaccent(t.name)) LIKE :kwNormalized
+                                 OR LOWER(unaccent(COALESCE(tt_all.name, ''))) LIKE :kwNormalized
                                  OR LOWER(t.name) LIKE :kw
                                  OR LOWER(COALESCE(tt_all.name, '')) LIKE :kw))
                   OR EXISTS (SELECT 1
@@ -188,8 +172,8 @@ public class SearchPublicationsUseCaseImpl implements SearchPublicationsUseCase 
                              JOIN categories c ON c.id = pc.category_id
                              LEFT JOIN category_translations ct_all ON ct_all.category_id = c.id
                              WHERE pc.publication_id = p.id
-                               AND (LOWER(public.immutable_unaccent(c.name)) LIKE :kwNormalized
-                                 OR LOWER(public.immutable_unaccent(COALESCE(ct_all.name, ''))) LIKE :kwNormalized
+                               AND (LOWER(unaccent(c.name)) LIKE :kwNormalized
+                                 OR LOWER(unaccent(COALESCE(ct_all.name, ''))) LIKE :kwNormalized
                                  OR LOWER(c.name) LIKE :kw
                                  OR LOWER(COALESCE(ct_all.name, '')) LIKE :kw)))
                 """);
@@ -245,15 +229,15 @@ public class SearchPublicationsUseCaseImpl implements SearchPublicationsUseCase 
             relevancePrefix = """
                 CASE
                     WHEN LOWER(COALESCE(NULLIF(pt.title, ''), p.title)) LIKE :kw THEN 0
-                    WHEN LOWER(public.immutable_unaccent(COALESCE(NULLIF(pt.title, ''), p.title))) LIKE :kwNormalized THEN 0
+                    WHEN LOWER(unaccent(COALESCE(NULLIF(pt.title, ''), p.title))) LIKE :kwNormalized THEN 0
                     WHEN LOWER(COALESCE(NULLIF(pt.subtitle, ''), p.subtitle)) LIKE :kw THEN 1
-                    WHEN LOWER(public.immutable_unaccent(COALESCE(NULLIF(pt.subtitle, ''), p.subtitle))) LIKE :kwNormalized THEN 1
+                    WHEN LOWER(unaccent(COALESCE(NULLIF(pt.subtitle, ''), p.subtitle))) LIKE :kwNormalized THEN 1
                     WHEN EXISTS (
                         SELECT 1
                         FROM publication_translations pt_all
                         WHERE pt_all.publication_id = p.id
-                          AND (LOWER(public.immutable_unaccent(COALESCE(pt_all.title, ''))) LIKE :kwNormalized
-                            OR LOWER(public.immutable_unaccent(COALESCE(pt_all.subtitle, ''))) LIKE :kwNormalized
+                          AND (LOWER(unaccent(COALESCE(pt_all.title, ''))) LIKE :kwNormalized
+                            OR LOWER(unaccent(COALESCE(pt_all.subtitle, ''))) LIKE :kwNormalized
                             OR LOWER(COALESCE(pt_all.title, '')) LIKE :kw
                             OR LOWER(COALESCE(pt_all.subtitle, '')) LIKE :kw)
                     ) THEN 1
@@ -263,8 +247,8 @@ public class SearchPublicationsUseCaseImpl implements SearchPublicationsUseCase 
                         JOIN tags t ON t.id = ptag.tag_id
                         LEFT JOIN tag_translations tt_all ON tt_all.tag_id = t.id
                         WHERE ptag.publication_id = p.id
-                          AND (LOWER(public.immutable_unaccent(t.name)) = :kwExactNormalized
-                            OR LOWER(public.immutable_unaccent(COALESCE(tt_all.name, ''))) = :kwExactNormalized
+                          AND (LOWER(unaccent(t.name)) = :kwExactNormalized
+                            OR LOWER(unaccent(COALESCE(tt_all.name, ''))) = :kwExactNormalized
                             OR LOWER(t.name) = :kwExactLower
                             OR LOWER(COALESCE(tt_all.name, '')) = :kwExactLower)
                     ) THEN 2
@@ -274,8 +258,8 @@ public class SearchPublicationsUseCaseImpl implements SearchPublicationsUseCase 
                         JOIN tags t ON t.id = ptag.tag_id
                         LEFT JOIN tag_translations tt_all ON tt_all.tag_id = t.id
                         WHERE ptag.publication_id = p.id
-                          AND (LOWER(public.immutable_unaccent(t.name)) LIKE :kwNormalized
-                            OR LOWER(public.immutable_unaccent(COALESCE(tt_all.name, ''))) LIKE :kwNormalized
+                          AND (LOWER(unaccent(t.name)) LIKE :kwNormalized
+                            OR LOWER(unaccent(COALESCE(tt_all.name, ''))) LIKE :kwNormalized
                             OR LOWER(t.name) LIKE :kw
                             OR LOWER(COALESCE(tt_all.name, '')) LIKE :kw)
                     ) THEN 3
@@ -301,50 +285,5 @@ public class SearchPublicationsUseCaseImpl implements SearchPublicationsUseCase 
             .replace('Đ', 'D')
             .toLowerCase(Locale.ROOT);
         return normalized.trim();
-    }
-
-    private void profileSearch(
-        PublicSearchRequest req,
-        int page,
-        int size,
-        int rows,
-        long total,
-        long dataMs,
-        long countMs,
-        long totalMs
-    ) {
-        if (totalMs >= SLOW_QUERY_THRESHOLD_MS) {
-            log.warn(
-                "SQL_PROFILE public_search slow totalMs={} dataMs={} countMs={} rows={} total={} page={} size={} keyword='{}' sortBy='{}' categoryId={} categoryIds={} available={} branch='{}'",
-                totalMs,
-                dataMs,
-                countMs,
-                rows,
-                total,
-                page,
-                size,
-                req.getKeyword(),
-                req.getSortBy(),
-                req.getCategoryId(),
-                req.getCategoryIds(),
-                req.getAvailable(),
-                req.getBranch()
-            );
-        } else {
-            log.debug(
-                "SQL_PROFILE public_search totalMs={} dataMs={} countMs={} rows={} total={} page={} size={}",
-                totalMs,
-                dataMs,
-                countMs,
-                rows,
-                total,
-                page,
-                size
-            );
-        }
-    }
-
-    private static long elapsedMs(long startedAt) {
-        return (System.nanoTime() - startedAt) / 1_000_000L;
     }
 }

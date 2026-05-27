@@ -1,7 +1,6 @@
 package com.library.catalog.application.impl;
 
 import com.library.catalog.application.UpdatePublicationUseCase;
-import com.library.catalog.application.cache.CatalogCacheEviction.EvictCatalogReadCaches;
 import com.library.catalog.domain.enums.PublicationFormat;
 import com.library.catalog.domain.valueobject.ISBN;
 import com.library.catalog.dto.request.publication.UpdatePublicationRequest;
@@ -23,7 +22,6 @@ public class UpdatePublicationUseCaseImpl implements UpdatePublicationUseCase {
     private final LibrarianNotificationService librarianNotificationService;
 
     @Override
-    @EvictCatalogReadCaches
     @Transactional
     public void execute(Long publicationId, UpdatePublicationRequest request, Long librarianId) {
         PublicationEntity entity = publicationJpaRepository.findById(publicationId)
