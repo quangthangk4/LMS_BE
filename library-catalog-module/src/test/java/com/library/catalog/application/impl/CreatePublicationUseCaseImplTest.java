@@ -7,6 +7,7 @@ import static org.mockito.Mockito.verify;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.library.catalog.domain.enums.FacultyTarget;
+import com.library.catalog.domain.enums.PublicationFormat;
 import com.library.catalog.dto.request.publication.CreatePublicationRequest;
 import com.library.catalog.infrastructure.persistence.entity.PublicationEntity;
 import com.library.catalog.infrastructure.persistence.repository.PublicationJpaRepository;
@@ -42,6 +43,8 @@ class CreatePublicationUseCaseImplTest {
             FacultyTarget.KHOA_KHOA_HOC_VA_KY_THUAT_MAY_TINH,
             2008,
             1,
+            PublicationFormat.PRINT_BOOK,
+            "First edition",
             "24x18x3 cm",
             700.0,
             10L,

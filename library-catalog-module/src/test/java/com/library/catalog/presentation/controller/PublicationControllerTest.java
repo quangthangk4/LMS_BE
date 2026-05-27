@@ -100,6 +100,8 @@ class PublicationControllerTest {
             1,
             null,
             null,
+            null,
+            null,
             10L,
             null,
             new Long[] {11L},
