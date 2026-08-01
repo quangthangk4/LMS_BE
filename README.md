@@ -2,6 +2,8 @@
 
 Hệ thống Quản lý Thư viện Trực tuyến Tích hợp AI - được xây dựng theo kiến trúc **Modular Monolith** với **Clean Architecture** và **Domain-Driven Design (DDD)**.
 
+📄 **Tài liệu dự án:** [DRAFT.pdf](./DRAFT.pdf)
+
 ## Kiến trúc Tổng quan
 
 ### Modular Monolith Architecture
