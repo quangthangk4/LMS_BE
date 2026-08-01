@@ -2,6 +2,8 @@
 
 Backend cho hệ thống quản lý thư viện thông minh, xây dựng bằng Spring Boot 3, Java 21 và PostgreSQL. Dự án tổ chức theo multi-module Maven, tách rõ các bounded context nghiệp vụ và dùng Flyway để quản lý schema database.
 
+📄 **Tài liệu dự án:** [DRAFT.pdf](./DRAFT.pdf)
+
 ## Tính năng chính
 
 - Xác thực, đăng ký, đăng nhập, Google OAuth2, refresh token và phân quyền theo vai trò.
