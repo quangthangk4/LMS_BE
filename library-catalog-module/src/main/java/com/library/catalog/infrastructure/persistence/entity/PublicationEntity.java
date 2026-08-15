@@ -13,7 +13,7 @@ import java.util.Set;
 @Table(name = "publications", indexes = {
     @Index(name = "idx_publication_isbn", columnList = "isbn", unique = true),
     @Index(name = "idx_publication_title", columnList = "title"),
-    @Index(name = "idx_publication_publisher", columnList = "publisherId")
+    @Index(name = "idx_publication_publisher", columnList = "publisher_id")
 })
 @Getter
 @Setter

@@ -250,11 +250,25 @@ public class User {
     /**
      * Business logic: Change password
      */
-    public void changePassword(PasswordHash newPasswordHash) {
-        if (newPasswordHash == null) {
-            throw new IllegalArgumentException("Password cannot be null");
+    public void changePassword(String oldPassword, String newPassword, String confirmPassword, IPasswordHasher hasher) {
+        if (newPassword == null || newPassword.trim().isEmpty()) {
+            throw new IllegalArgumentException("New password cannot be null or empty");
         }
-        this.passwordHash = newPasswordHash;
+        if (confirmPassword == null || confirmPassword.trim().isEmpty()) {
+            throw new IllegalArgumentException("Confirm password cannot be null or empty");
+        }
+        if (!newPassword.equals(confirmPassword)) {
+            throw new IllegalArgumentException("New password and confirm password do not match");
+        }
+        if (oldPassword == null || oldPassword.trim().isEmpty()) {
+            throw new IllegalArgumentException("Old password cannot be null or empty");
+        }
+
+        if (this.passwordHash == null || !this.passwordHash.matches(oldPassword, hasher)) {
+            throw new AppException(ErrorCode.INVALID_PASSWORD);
+        }
+
+        this.passwordHash = PasswordHash.createFromRaw(newPassword, hasher);
     }
 
     public void verifyPassword(String newPassword, IPasswordHasher hasher) {

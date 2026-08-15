@@ -9,8 +9,10 @@ import com.library.catalog.application.usecase.publication.DeletePublicationUseC
 import com.library.catalog.application.usecase.publication.GetAllPublicationsForLibrarianUseCase;
 import com.library.catalog.application.usecase.publication.GetPublicationByIdUseCase;
 import com.library.catalog.application.usecase.publication.UpdatePublicationUseCase;
+import com.library.shared.constant.RoleConstants;
 import com.library.shared.dto.ApiResponseApp;
 import com.library.shared.dto.PageResponse;
+import com.library.shared.util.RequiresRole;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -71,6 +73,7 @@ public class PublicationController {
      */
     @GetMapping()
     @ResponseStatus(HttpStatus.OK)
+    @RequiresRole(RoleConstants.LIBRARIAN)
     public ApiResponseApp<PageResponse<PublicationResponse>> getAllPublications(
             @Valid GetAllPublicationForLibrarian request) {
         log.info("REST request to get publications with criteria: {}", request);

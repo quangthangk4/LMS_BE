@@ -8,8 +8,13 @@ import com.library.auth.application.RefreshAccessTokenUseCase;
 import com.library.auth.dto.response.TokenResponse;
 import com.library.auth.infrastructure.config.Oauth2UrlBuilder;
 import com.library.shared.dto.ApiResponseApp;
+import com.library.shared.util.RequiresAuthentication;
+import com.library.shared.util.SecurityEvaluator;
+import com.library.user.application.dto.request.ChangePasswordRequest;
 import com.library.user.application.dto.request.LoginRequest;
+import com.library.user.application.usecase.user.ChangePasswordUseCase;
 import com.library.user.domain.port.IPasswordHasher;
+import com.library.user.domain.valueobject.UserId;
 import jakarta.servlet.http.HttpServletRequest;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.web.bind.annotation.GetMapping;
@@ -32,14 +37,18 @@ public class AuthController {
     private final AuthService authService;
     private final LogoutUseCase logoutUseCase;
     private final RefreshAccessTokenUseCase refreshAccessTokenUseCase;
+    private final ChangePasswordUseCase changePasswordUseCase;
+    private final SecurityEvaluator securityEvaluator;
 
-    public AuthController(LoginUseCase loginUseCase, IPasswordHasher iPasswordHasher, Oauth2UrlBuilder oauth2UrlBuilder, AuthService authService, LogoutUseCase logoutUseCase, RefreshAccessTokenUseCase refreshAccessTokenUseCase) {
+    public AuthController(LoginUseCase loginUseCase, IPasswordHasher iPasswordHasher, Oauth2UrlBuilder oauth2UrlBuilder, AuthService authService, LogoutUseCase logoutUseCase, RefreshAccessTokenUseCase refreshAccessTokenUseCase, ChangePasswordUseCase changePasswordUseCase, SecurityEvaluator securityEvaluator) {
         this.loginUseCase = loginUseCase;
         this.iPasswordHasher = iPasswordHasher;
         this.oauth2UrlBuilder = oauth2UrlBuilder;
         this.authService = authService;
         this.logoutUseCase = logoutUseCase;
         this.refreshAccessTokenUseCase = refreshAccessTokenUseCase;
+        this.changePasswordUseCase = changePasswordUseCase;
+        this.securityEvaluator = securityEvaluator;
     }
 
     @PostMapping("/login")
@@ -51,6 +60,15 @@ public class AuthController {
     public ApiResponseApp<Void> logout(@RequestHeader("re-token") String refreshToken) {
         logoutUseCase.execute(refreshToken);
         return ApiResponseApp.success("Logout successful", null);
+    }
+
+    @PostMapping("/change-password")
+    @RequiresAuthentication()
+    public ApiResponseApp<Void> changePassword(@RequestBody ChangePasswordRequest request) {
+        Long userId = securityEvaluator.getCurrentUserId();
+        changePasswordUseCase.execute(request, userId);
+        return ApiResponseApp.success("Change password successful", null);
+
     }
 
     @PostMapping("/refresh-accesstoken")

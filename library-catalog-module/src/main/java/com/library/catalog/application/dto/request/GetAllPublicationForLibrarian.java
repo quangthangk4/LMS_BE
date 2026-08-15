@@ -16,14 +16,17 @@ public record GetAllPublicationForLibrarian(
     SortDirection direction,
 
     @Min(value = 0, message = "Page must be >= 0")
-    int page,
+    Integer page,
 
     @Min(value = 1, message = "Size must be >= 1")
-    int size
+    Integer size
 ) {
     public GetAllPublicationForLibrarian {
-        if (page < 0) page = 0;
-        if (size < 1) size = 20;
+        if (availability == null) availability = AvailabilityFilter.ALL;
+        if (direction == null) direction = SortDirection.ASC;
+        if (page == null || page < 0) page = 0;
+        if (size == null || size < 1) size = 10;
+        if (sortBy == null) sortBy = "createdAt"; // default sorting field
     }
 
     public enum AvailabilityFilter {

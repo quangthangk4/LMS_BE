@@ -4,6 +4,17 @@ Hệ thống Quản lý Thư viện Trực tuyến Tích hợp AI - được xâ
 
 📄 **Tài liệu dự án:** [DRAFT.pdf](./DRAFT.pdf)
 
+## 🔑 Tài khoản trải nghiệm (Demo Accounts)
+
+Dành cho nhà tuyển dụng và người trải nghiệm hệ thống:
+
+| Vai trò | Email / Tài khoản | Mật khẩu | Ghi chú |
+| :--- | :--- | :--- | :--- |
+| **Quản trị viên (Admin)** | `admin@hcmut.edu.vn` | `admin` | Toàn quyền quản trị hệ thống |
+| **Thủ thư (Librarian)** | `hothang2004@hcmut.edu.vn` | `05102004rR@` | Quản lý mượn/trả, sách & bạn đọc |
+| **Người dùng (Member)** | `thangvip030201@gmail.com` | `12345678` | Hoặc đăng nhập trực tiếp qua **Google** |
+
+
 ## Kiến trúc Tổng quan
 
 ### Modular Monolith Architecture
